@@ -29,7 +29,7 @@ Security & Privacy
 ________________________________________
  Getting Started
 1. Clone the repo
-git clone https://github.com/YOUR_USERNAME/skilllink.git
+git clone https://github.com/skilllink.git
 cd skilllink
 2. Install dependencies
 npm install
