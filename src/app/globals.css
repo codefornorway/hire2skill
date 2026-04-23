@@ -1,26 +1,64 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-brand: #2563EB;
+  --color-brand-dark: #1E3A8A;
+  --color-brand-light: #38BDF8;
+  --color-success: #22C55E;
+  --color-accent: #F59E0B;
+  --color-bg: #F9FAFB;
+  --color-text: #111827;
+  --color-text-secondary: #6B7280;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+body {
+  background: #F9FAFB;
+  color: #111827;
+  font-family: var(--font-geist-sans), Arial, sans-serif;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+.btn-primary {
+  background: linear-gradient(90deg, #2563EB, #38BDF8);
+  color: white;
+  font-weight: 600;
+  border-radius: 10px;
+  padding: 0.625rem 1.5rem;
+  font-size: 0.875rem;
+  transition: opacity 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
+.btn-primary:hover { opacity: 0.9; }
+.btn-primary:disabled { opacity: 0.5; }
+
+.btn-secondary {
+  background: white;
+  color: #374151;
+  font-weight: 500;
+  border-radius: 10px;
+  padding: 0.625rem 1.5rem;
+  font-size: 0.875rem;
+  border: 1px solid #E5E7EB;
+  transition: background 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-secondary:hover { background: #F9FAFB; }
+
+.btn-accent {
+  background: #F59E0B;
+  color: white;
+  font-weight: 600;
+  border-radius: 10px;
+  padding: 0.625rem 1.5rem;
+  font-size: 0.875rem;
+  transition: background 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-accent:hover { background: #D97706; }

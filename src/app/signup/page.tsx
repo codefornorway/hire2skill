@@ -3,8 +3,10 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import { useLanguage } from '@/context/LanguageContext'
 
 export default function SignupPage() {
+  const { t } = useLanguage()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -27,19 +29,18 @@ export default function SignupPage() {
     if (error) {
       setError(error.message)
     } else {
-      setSuccess('Account created! Check your email to confirm your account.')
+      setSuccess(t.signup.success)
       setEmail('')
       setPassword('')
     }
-
     setLoading(false)
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 px-4">
+    <div className="flex flex-1 items-center justify-center bg-gray-50 px-4 py-10">
       <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg">
-        <h1 className="mb-1 text-2xl font-bold text-zinc-900">Create account</h1>
-        <p className="mb-6 text-sm text-zinc-500">Join SkillLink and find local opportunities</p>
+        <h1 className="mb-1 text-2xl font-bold text-gray-900">{t.signup.title}</h1>
+        <p className="mb-6 text-sm text-gray-500">{t.signup.subtitle}</p>
 
         {error && (
           <div className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
@@ -54,41 +55,47 @@ export default function SignupPage() {
 
         <form onSubmit={handleSignup} className="flex flex-col gap-4">
           <div>
-            <label className="mb-1 block text-sm font-medium text-zinc-700">Email</label>
+            <label className="mb-1 block text-sm font-medium text-gray-700">{t.signup.email}</label>
             <input
               type="email"
               required
               value={email}
               onChange={e => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              className="w-full rounded-lg border border-zinc-300 px-4 py-2.5 text-sm outline-none focus:border-zinc-500 focus:ring-2 focus:ring-zinc-200"
+              placeholder={t.signup.placeholder.email}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-zinc-700">Password</label>
+            <label className="mb-1 block text-sm font-medium text-gray-700">{t.signup.password}</label>
             <input
               type="password"
               required
               minLength={6}
               value={password}
               onChange={e => setPassword(e.target.value)}
-              placeholder="Min. 6 characters"
-              className="w-full rounded-lg border border-zinc-300 px-4 py-2.5 text-sm outline-none focus:border-zinc-500 focus:ring-2 focus:ring-zinc-200"
+              placeholder={t.signup.placeholder.password}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
           </div>
+
           <button
             type="submit"
             disabled={loading}
-            className="rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-700 disabled:opacity-50"
+            style={{
+              background: 'linear-gradient(90deg, #2563EB, #38BDF8)',
+              color: '#ffffff',
+              opacity: loading ? 0.6 : 1,
+            }}
+            className="w-full rounded-lg px-4 py-3 text-sm font-semibold"
           >
-            {loading ? 'Creating account...' : 'Sign up'}
+            {loading ? t.signup.submitting : t.signup.submit}
           </button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-zinc-500">
-          Already have an account?{' '}
-          <Link href="/login" className="font-medium text-zinc-900 underline underline-offset-2">
-            Log in
+        <p className="mt-6 text-center text-sm text-gray-500">
+          {t.signup.hasAccount}{' '}
+          <Link href="/login" className="font-semibold text-blue-600 hover:underline">
+            {t.signup.login}
           </Link>
         </p>
       </div>

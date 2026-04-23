@@ -1,26 +1,29 @@
-import Link from 'next/link'
+import { createClient } from '@/lib/supabase/server'
+import HomeContent from './HomeContent'
 
-export default function Home() {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 px-4">
-      <div className="w-full max-w-md rounded-2xl bg-white p-10 shadow-lg text-center">
-        <h1 className="text-3xl font-bold text-zinc-900 mb-2">SkillLink</h1>
-        <p className="text-zinc-500 mb-8">Connecting people with local opportunities in Norway</p>
-        <div className="flex flex-col gap-3">
-          <Link
-            href="/signup"
-            className="rounded-lg bg-zinc-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-zinc-700"
-          >
-            Get started
-          </Link>
-          <Link
-            href="/login"
-            className="rounded-lg border border-zinc-300 px-4 py-3 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50"
-          >
-            Log in
-          </Link>
-        </div>
-      </div>
-    </div>
-  )
+const SAMPLE_JOBS = [
+  { title: 'Help moving furniture', location: 'Oslo', price: 500, category: 'Jobs', urgent: true },
+  { title: 'House cleaning – 3 rooms', location: 'Bergen', price: 350, category: 'Services', urgent: true },
+  { title: 'Event assistant – weekend', location: 'Trondheim', price: 280, category: 'Jobs', urgent: true },
+  { title: 'English tutoring for kids', location: 'Oslo', price: 400, category: 'Tutoring', urgent: false },
+  { title: 'Grocery delivery – elderly', location: 'Stavanger', price: 150, category: 'Services', urgent: false },
+]
+
+export default async function Home() {
+  const supabase = await createClient()
+
+  const { count: jobCount } = await supabase.from('posts').select('*', { count: 'exact', head: true })
+  const { data: recentPosts } = await supabase
+    .from('posts')
+    .select('id, title, category, location, price, created_at')
+    .order('created_at', { ascending: false })
+    .limit(5)
+
+  const jobs = recentPosts && recentPosts.length >= 3
+    ? recentPosts.map(p => ({ ...p, urgent: false }))
+    : SAMPLE_JOBS
+
+  const totalJobs = jobCount && jobCount > 10 ? jobCount : 1200
+
+  return <HomeContent jobs={jobs} totalJobs={totalJobs} />
 }

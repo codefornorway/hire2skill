@@ -4,8 +4,10 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useLanguage } from '@/context/LanguageContext'
 
 export default function LoginPage() {
+  const { t } = useLanguage()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -24,16 +26,15 @@ export default function LoginPage() {
       setError(error.message)
       setLoading(false)
     } else {
-      router.push('/dashboard')
-      router.refresh()
+      window.location.href = '/dashboard'
     }
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 px-4">
+    <div className="flex flex-1 items-center justify-center bg-gray-50 px-4 py-10">
       <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg">
-        <h1 className="mb-1 text-2xl font-bold text-zinc-900">Welcome back</h1>
-        <p className="mb-6 text-sm text-zinc-500">Log in to your SkillLink account</p>
+        <h1 className="mb-1 text-2xl font-bold text-gray-900">{t.login.title}</h1>
+        <p className="mb-6 text-sm text-gray-500">{t.login.subtitle}</p>
 
         {error && (
           <div className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
@@ -43,40 +44,46 @@ export default function LoginPage() {
 
         <form onSubmit={handleLogin} className="flex flex-col gap-4">
           <div>
-            <label className="mb-1 block text-sm font-medium text-zinc-700">Email</label>
+            <label className="mb-1 block text-sm font-medium text-gray-700">{t.login.email}</label>
             <input
               type="email"
               required
               value={email}
               onChange={e => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              className="w-full rounded-lg border border-zinc-300 px-4 py-2.5 text-sm outline-none focus:border-zinc-500 focus:ring-2 focus:ring-zinc-200"
+              placeholder={t.login.placeholder.email}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-zinc-700">Password</label>
+            <label className="mb-1 block text-sm font-medium text-gray-700">{t.login.password}</label>
             <input
               type="password"
               required
               value={password}
               onChange={e => setPassword(e.target.value)}
-              placeholder="Your password"
-              className="w-full rounded-lg border border-zinc-300 px-4 py-2.5 text-sm outline-none focus:border-zinc-500 focus:ring-2 focus:ring-zinc-200"
+              placeholder={t.login.placeholder.password}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
           </div>
+
           <button
             type="submit"
             disabled={loading}
-            className="rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-700 disabled:opacity-50"
+            style={{
+              background: 'linear-gradient(90deg, #2563EB, #38BDF8)',
+              color: '#ffffff',
+              opacity: loading ? 0.6 : 1,
+            }}
+            className="w-full rounded-lg px-4 py-3 text-sm font-semibold"
           >
-            {loading ? 'Logging in...' : 'Log in'}
+            {loading ? t.login.submitting : t.login.submit}
           </button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-zinc-500">
-          Don&apos;t have an account?{' '}
-          <Link href="/signup" className="font-medium text-zinc-900 underline underline-offset-2">
-            Sign up
+        <p className="mt-6 text-center text-sm text-gray-500">
+          {t.login.noAccount}{' '}
+          <Link href="/signup" className="font-semibold text-blue-600 hover:underline">
+            {t.login.signup}
           </Link>
         </p>
       </div>
