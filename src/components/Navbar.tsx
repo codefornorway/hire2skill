@@ -30,6 +30,9 @@ export default async function Navbar() {
         </Link>
 
         <div className="flex items-center gap-2 sm:gap-5">
+          <Link href="/services" className="hidden sm:block text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">
+            Services
+          </Link>
           <Link href="/taskers" className="hidden sm:block text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">
             Find Helpers
           </Link>

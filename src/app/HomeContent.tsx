@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useLanguage } from '@/context/LanguageContext'
 import {
   SprayCan, Truck, GraduationCap, Package, Wrench, PartyPopper, Monitor, Leaf,
@@ -168,7 +169,7 @@ function TaskerCard({ tasker, bookLabel, replyLabel, doneLabel }: { tasker: Disp
     <Link href={href} className="group flex flex-col rounded-2xl bg-white border border-gray-200 p-5 hover:border-blue-400 hover:shadow-xl transition-all duration-200">
       <div className="flex items-center gap-3 mb-3">
         {tasker.avatarUrl ? (
-          <img src={tasker.avatarUrl} alt={tasker.name} className="h-12 w-12 rounded-2xl object-cover shrink-0" />
+          <Image src={tasker.avatarUrl} alt={tasker.name} width={48} height={48} className="h-12 w-12 rounded-2xl object-cover shrink-0" />
         ) : (
           <div className="h-12 w-12 rounded-2xl flex items-center justify-center shrink-0 text-white font-bold text-sm"
             style={{ background: tasker.avatarColor }}>

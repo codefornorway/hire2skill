@@ -1,5 +1,16 @@
+import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import TaskersContent from './TaskersContent'
+
+export const metadata: Metadata = {
+  title: 'Browse Local Helpers',
+  description: 'Find verified helpers in your area. Search by service, location, price and rating. Book cleaners, movers, tutors, handymen and more across Norway.',
+  openGraph: {
+    title: 'Browse Local Helpers | SkillLink',
+    description: 'Find verified helpers near you across Norway.',
+    url: 'https://skilllink.no/taskers',
+  },
+}
 
 const SAMPLE_TASKERS = [
   { id: 's1',  display_name: 'Maria K.',   bio: 'Professional cleaner with 5 years experience. I bring my own supplies and love a spotless home.', hourly_rate: 350, categories: ['Cleaning'], location: 'Oslo', verified: true, tasks_done: 52, rating: 4.9, response_hours: 1 },

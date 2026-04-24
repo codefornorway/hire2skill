@@ -16,8 +16,24 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SkillLink",
-  description: "Connecting people with local opportunities in Norway",
+  metadataBase: new URL('https://skilllink.no'),
+  title: {
+    template: '%s | SkillLink',
+    default: 'SkillLink — Find Local Helpers in Norway',
+  },
+  description: 'SkillLink connects you with verified local helpers across Norway. Book cleaners, movers, tutors, handymen and more — fast and easy.',
+  keywords: ['local helpers Norway', 'hire cleaner Oslo', 'find handyman Bergen', 'tutoring Norway', 'SkillLink'],
+  openGraph: {
+    siteName: 'SkillLink',
+    type: 'website',
+    locale: 'en_NO',
+    images: [{ url: '/og-default.png', width: 1200, height: 630, alt: 'SkillLink — Local helpers in Norway' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    site: '@skilllink_no',
+  },
+  robots: { index: true, follow: true },
 };
 
 export default function RootLayout({

@@ -1,10 +1,51 @@
+import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import TaskerProfileContent from './TaskerProfileContent'
+import JsonLd from '@/components/JsonLd'
 
 export const dynamic = 'force-dynamic'
 
 const SAMPLE_TASKERS = [
+  { id: 's1', display_name: 'Maria K.',  categories: ['Cleaning'],    location: 'Oslo',      bio: 'Professional cleaner with 5 years of hands-on experience.' },
+  { id: 's2', display_name: 'Erik R.',   categories: ['Moving'],      location: 'Bergen',    bio: 'Strong, reliable, and punctual. I own a large van.' },
+  { id: 's3', display_name: 'Amina S.',  categories: ['Tutoring'],    location: 'Oslo',      bio: 'Experienced math, science, and English tutor.' },
+  { id: 's4', display_name: 'Jonas B.',  categories: ['IT & Tech'],   location: 'Trondheim', bio: 'IT professional with 8 years of industry experience.' },
+  { id: 's5', display_name: 'Sara L.',   categories: ['Events'],      location: 'Oslo',      bio: 'Professional event coordinator.' },
+  { id: 's6', display_name: 'Mikkel T.', categories: ['Handyman'],    location: 'Stavanger', bio: 'Skilled handyman covering all small and medium repairs.' },
+]
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params
+  const supabase = await createClient()
+  const { data: profile } = await supabase
+    .from('profiles').select('display_name, bio, categories, location, avatar_url').eq('id', id).single()
+
+  const tasker = profile ?? SAMPLE_TASKERS.find(t => t.id === id)
+  if (!tasker) return {}
+
+  const name = tasker.display_name ?? 'Local Helper'
+  const category = (tasker.categories ?? [])[0] ?? 'Helper'
+  const location = tasker.location ?? 'Norway'
+  const description = (tasker.bio ?? '').slice(0, 155)
+  const title = `${name} — ${category} in ${location}`
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title: `${title} | SkillLink`,
+      description,
+      url: `https://skilllink.no/taskers/${id}`,
+      type: 'profile',
+      images: profile?.avatar_url
+        ? [{ url: profile.avatar_url, width: 400, height: 400, alt: name }]
+        : undefined,
+    },
+  }
+}
+
+const SAMPLE_TASKERS_FULL = [
   { id: 's1', display_name: 'Maria K.', bio: 'Professional cleaner with 5 years of hands-on experience. I bring my own eco-friendly supplies and take real pride in leaving every home spotless. Available weekdays and weekends in Oslo and nearby areas. I specialise in deep cleans, move-in/move-out cleaning, and regular weekly visits.', hourly_rate: 350, categories: ['Cleaning'], location: 'Oslo', verified: true, tasks_done: 52, rating: 4.9, response_hours: 1, avatar_url: null },
   { id: 's2', display_name: 'Erik R.', bio: 'Strong, reliable, and punctual. I own a large van and help with residential moves, heavy lifting, furniture assembly, and IKEA build-outs. I have moved over 38 households in Bergen and always handle your belongings with care. Happy to quote for jobs of any size.', hourly_rate: 500, categories: ['Moving'], location: 'Bergen', verified: true, tasks_done: 38, rating: 4.8, response_hours: 2, avatar_url: null },
   { id: 's3', display_name: 'Amina S.', bio: 'Experienced math, science, and English tutor for students aged 8–25. I hold a Masters in Education and have 4 years of private tutoring experience. My students consistently improve at least one grade level within three months. I adapt to each students learning style and set clear goals.', hourly_rate: 400, categories: ['Tutoring'], location: 'Oslo', verified: true, tasks_done: 74, rating: 5.0, response_hours: 1, avatar_url: null },
@@ -59,7 +100,7 @@ export default async function TaskerProfilePage({
     .eq('id', id)
     .single()
 
-  const tasker = profile ?? SAMPLE_TASKERS.find(t => t.id === id)
+  const tasker = profile ?? SAMPLE_TASKERS_FULL.find(t => t.id === id)
   if (!tasker) notFound()
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -99,12 +140,41 @@ export default async function TaskerProfilePage({
     ? { ...profile, rating: (profile as Record<string, unknown>).avg_rating as number ?? profile.rating ?? 0 }
     : tasker
 
+  const rating = (resolvedTasker as Record<string, unknown>).rating as number ?? 0
+  const reviewCount = reviews.length
+
+  const serviceSchema: Record<string, unknown> = {
+    '@context': 'https://schema.org',
+    '@type': 'Service',
+    name: `${resolvedTasker.display_name} — ${(resolvedTasker.categories ?? [])[0] ?? 'Local Helper'} in ${resolvedTasker.location ?? 'Norway'}`,
+    description: resolvedTasker.bio,
+    areaServed: { '@type': 'City', name: resolvedTasker.location ?? 'Norway' },
+    serviceType: (resolvedTasker.categories ?? [])[0] ?? 'Local Service',
+    provider: {
+      '@type': 'Person',
+      name: resolvedTasker.display_name,
+      ...(resolvedTasker.avatar_url ? { image: resolvedTasker.avatar_url } : {}),
+    },
+    ...(reviewCount > 0 ? {
+      aggregateRating: {
+        '@type': 'AggregateRating',
+        ratingValue: rating.toFixed(1),
+        reviewCount,
+        bestRating: 5,
+        worstRating: 1,
+      },
+    } : {}),
+  }
+
   return (
-    <TaskerProfileContent
-      tasker={resolvedTasker}
-      reviews={reviews}
-      isLoggedIn={!!user}
-      currentUserId={user?.id ?? null}
-    />
+    <>
+      <JsonLd data={serviceSchema} />
+      <TaskerProfileContent
+        tasker={resolvedTasker}
+        reviews={reviews}
+        isLoggedIn={!!user}
+        currentUserId={user?.id ?? null}
+      />
+    </>
   )
 }

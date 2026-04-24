@@ -1,5 +1,18 @@
+import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import HomeContent from './HomeContent'
+import JsonLd from '@/components/JsonLd'
+
+export const metadata: Metadata = {
+  title: 'SkillLink — Find Local Helpers in Norway',
+  description: 'Book verified local helpers for cleaning, moving, tutoring, handyman work and more. Serving Oslo, Bergen, Trondheim, Stavanger and across Norway.',
+  openGraph: {
+    title: 'SkillLink — Find Local Helpers in Norway',
+    description: 'Book verified local helpers for cleaning, moving, tutoring, handyman work and more across Norway.',
+    url: 'https://skilllink.no',
+    type: 'website',
+  },
+}
 
 export type RealHelper = {
   id: string
@@ -59,5 +72,19 @@ export default async function Home() {
         }))
       : null
 
-  return <HomeContent jobs={jobs} totalJobs={totalJobs} helpers={helpers} />
+  const orgSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'SkillLink',
+    url: 'https://skilllink.no',
+    description: 'SkillLink connects people with verified local helpers across Norway.',
+    areaServed: { '@type': 'Country', name: 'Norway' },
+  }
+
+  return (
+    <>
+      <JsonLd data={orgSchema} />
+      <HomeContent jobs={jobs} totalJobs={totalJobs} helpers={helpers} />
+    </>
+  )
 }

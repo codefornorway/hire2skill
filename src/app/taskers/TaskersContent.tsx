@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useSearchParams } from 'next/navigation'
 import { useLanguage } from '@/context/LanguageContext'
 import {
@@ -101,7 +102,7 @@ function TaskerCard({ tasker, index, bookLabel }: { tasker: Tasker; index: numbe
     <div className="bg-white rounded-2xl border border-gray-200 p-6 hover:border-blue-400 hover:shadow-xl transition-all duration-200 flex flex-col">
       <div className="flex items-start gap-4 mb-4">
         {tasker.avatar_url ? (
-          <img src={tasker.avatar_url} alt={tasker.display_name} className="h-16 w-16 rounded-2xl object-cover shrink-0" />
+          <Image src={tasker.avatar_url} alt={tasker.display_name} width={64} height={64} className="h-16 w-16 rounded-2xl object-cover shrink-0" />
         ) : (
           <div className="h-16 w-16 rounded-2xl flex items-center justify-center shrink-0 text-white font-bold text-lg shadow-sm"
             style={{ background: color }}>

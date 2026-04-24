@@ -3,6 +3,7 @@
 import React from 'react'
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 
 type Tasker = {
@@ -161,7 +162,8 @@ export default function TaskerProfileContent({
               <div className="flex items-start gap-6">
                 {/* Avatar */}
                 {tasker.avatar_url ? (
-                  <img src={tasker.avatar_url} alt={tasker.display_name}
+                  <Image src={tasker.avatar_url} alt={tasker.display_name}
+                    width={96} height={96}
                     className="h-24 w-24 rounded-2xl object-cover shrink-0 shadow-md" />
                 ) : (
                   <div className="h-24 w-24 rounded-2xl flex items-center justify-center shrink-0 text-white font-bold text-2xl shadow-md"
