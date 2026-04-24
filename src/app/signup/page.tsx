@@ -81,12 +81,7 @@ export default function SignupPage() {
           <button
             type="submit"
             disabled={loading}
-            style={{
-              background: 'linear-gradient(90deg, #2563EB, #38BDF8)',
-              color: '#ffffff',
-              opacity: loading ? 0.6 : 1,
-            }}
-            className="w-full rounded-lg px-4 py-3 text-sm font-semibold"
+            className={`btn-primary w-full py-3 ${loading ? 'opacity-60' : ''}`}
           >
             {loading ? t.signup.submitting : t.signup.submit}
           </button>

@@ -9,7 +9,22 @@ import {
   HeartHandshake, Music,
 } from 'lucide-react'
 
+import type { RealHelper } from './page'
+
 type Job = { title: string; location: string; price: number | null; category: string; urgent?: boolean }
+
+// Normalise a human-readable category label to a CAT_ICONS key
+function toCatKey(label: string): string {
+  const overrides: Record<string, string> = {
+    'IT & Tech': 'it', 'Pet Care': 'petcare', 'Kids Care': 'kidscare',
+    'Car Wash': 'carwash', 'Makeup Artist': 'makeup', 'Hair Dresser': 'hairdresser',
+    'Snow Removal': 'snowremoval', 'Dog Walking': 'dogwalking',
+    'Furniture Assembly': 'furnitureassembly', 'Window Cleaning': 'windowcleaning',
+    'Personal Training': 'personaltraining', 'Elder Care': 'eldercare',
+    'Music Lessons': 'musiclessons',
+  }
+  return overrides[label] ?? label.toLowerCase().replace(/\s+/g, '').replace('&', '')
+}
 
 // ── Inline Norway flag SVG (no emoji) ──────────────────────────────────────
 function NorwayFlag({ size = 16 }: { size?: number }) {
@@ -83,7 +98,7 @@ const AVATAR_COLORS = ['#2563EB', '#16A34A', '#7C3AED', '#D97706', '#E11D48', '#
 function TaskCard({ job, bookLabel, negotiableLabel }: { job: Job; bookLabel: string; negotiableLabel: string }) {
   const initials = job.title.split(' ').slice(0, 2).map(w => w[0]?.toUpperCase() ?? '').join('')
   const color = AVATAR_COLORS[Math.abs(job.title.charCodeAt(0)) % AVATAR_COLORS.length]
-  const cat = CAT_ICONS[job.category.toLowerCase()] ?? CAT_ICONS.handyman
+  const cat = CAT_ICONS[toCatKey(job.category)] ?? CAT_ICONS.handyman
   const CatIcon = cat.Icon
 
   return (
@@ -130,24 +145,39 @@ function TaskCard({ job, bookLabel, negotiableLabel }: { job: Job; bookLabel: st
   )
 }
 
+type DisplayHelper = {
+  id?: string
+  initials: string
+  name: string
+  avatarUrl?: string | null
+  avatarColor: string
+  location: string
+  catKey: string
+  price: number | null
+  rating: number
+  tasks: number
+  reply: string
+}
+
 // ── Tasker profile card ─────────────────────────────────────────────────────
-function TaskerCard({ tasker, bookLabel, replyLabel, doneLabel }: { tasker: typeof SAMPLE_TASKERS[0]; bookLabel: string; replyLabel: string; doneLabel: string }) {
-  const cat = CAT_ICONS[tasker.category] ?? CAT_ICONS.handyman
+function TaskerCard({ tasker, bookLabel, replyLabel, doneLabel }: { tasker: DisplayHelper; bookLabel: string; replyLabel: string; doneLabel: string }) {
+  const cat = CAT_ICONS[tasker.catKey] ?? CAT_ICONS.handyman
   const CatIcon = cat.Icon
+  const href = tasker.id ? `/taskers/${tasker.id}` : '/signup'
   return (
-    <Link href="/signup" className="group flex flex-col rounded-2xl bg-white border border-gray-200 p-5 hover:border-blue-400 hover:shadow-xl transition-all duration-200">
+    <Link href={href} className="group flex flex-col rounded-2xl bg-white border border-gray-200 p-5 hover:border-blue-400 hover:shadow-xl transition-all duration-200">
       <div className="flex items-center gap-3 mb-3">
-        <div className="h-12 w-12 rounded-2xl flex items-center justify-center shrink-0 text-white font-bold text-sm"
-          style={{ background: AVATAR_COLORS[SAMPLE_TASKERS.indexOf(tasker)] }}>
-          {tasker.initials}
-        </div>
+        {tasker.avatarUrl ? (
+          <img src={tasker.avatarUrl} alt={tasker.name} className="h-12 w-12 rounded-2xl object-cover shrink-0" />
+        ) : (
+          <div className="h-12 w-12 rounded-2xl flex items-center justify-center shrink-0 text-white font-bold text-sm"
+            style={{ background: tasker.avatarColor }}>
+            {tasker.initials}
+          </div>
+        )}
         <div>
           <div className="flex items-center gap-2">
             <p className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{tasker.name}</p>
-            <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-xs font-semibold text-green-700">
-              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#15803D" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              Verified
-            </span>
           </div>
           <div className="flex items-center gap-1 mt-0.5">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
@@ -162,10 +192,12 @@ function TaskerCard({ tasker, bookLabel, replyLabel, doneLabel }: { tasker: type
       <Stars rating={tasker.rating} />
 
       <div className="flex items-center gap-4 mt-3 text-xs text-gray-400">
-        <span className="flex items-center gap-1">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-          {tasker.tasks} {doneLabel}
-        </span>
+        {tasker.tasks > 0 && (
+          <span className="flex items-center gap-1">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            {tasker.tasks} {doneLabel}
+          </span>
+        )}
         <span className="flex items-center gap-1">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
           {replyLabel} {tasker.reply}
@@ -173,7 +205,9 @@ function TaskerCard({ tasker, bookLabel, replyLabel, doneLabel }: { tasker: type
       </div>
 
       <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
-        <span className="text-lg font-extrabold" style={{ color: '#16A34A' }}>{tasker.price} NOK</span>
+        <span className="text-lg font-extrabold" style={{ color: '#16A34A' }}>
+          {tasker.price ? `${tasker.price} NOK` : 'Negotiable'}
+        </span>
         <span className="rounded-xl px-4 py-2 text-sm font-bold text-white transition-opacity group-hover:opacity-90"
           style={{ background: 'linear-gradient(90deg,#2563EB,#38BDF8)' }}>
           {bookLabel}
@@ -184,7 +218,7 @@ function TaskerCard({ tasker, bookLabel, replyLabel, doneLabel }: { tasker: type
 }
 
 // ── Main export ─────────────────────────────────────────────────────────────
-export default function HomeContent({ jobs, totalJobs }: { jobs: Job[]; totalJobs: number }) {
+export default function HomeContent({ jobs, totalJobs, helpers }: { jobs: Job[]; totalJobs: number; helpers: RealHelper[] | null }) {
   const { t } = useLanguage()
   const h = t.home
 
@@ -193,6 +227,38 @@ export default function HomeContent({ jobs, totalJobs }: { jobs: Job[]; totalJob
   const how3 = h?.how3
 
   if (!h || !how1 || !how2 || !how3) return null
+
+  // Build display helpers — real profiles if available, otherwise sample fallback
+  const displayHelpers: DisplayHelper[] = helpers
+    ? helpers.map((p, i) => {
+        const initials = p.name.split(' ').slice(0, 2).map(w => w[0]?.toUpperCase() ?? '').join('')
+        const catKey = p.categories.length > 0 ? toCatKey(p.categories[0]) : 'handyman'
+        return {
+          id: p.id,
+          initials,
+          name: p.name,
+          avatarUrl: p.avatarUrl,
+          avatarColor: AVATAR_COLORS[i % AVATAR_COLORS.length],
+          location: p.location,
+          catKey,
+          price: p.hourlyRate,
+          rating: 4.8,
+          tasks: 0,
+          reply: '< 2h',
+        }
+      })
+    : SAMPLE_TASKERS.map((t, i) => ({
+        initials: t.initials,
+        name: t.name,
+        avatarUrl: null,
+        avatarColor: AVATAR_COLORS[i],
+        location: t.location,
+        catKey: t.category,
+        price: t.price,
+        rating: t.rating,
+        tasks: t.tasks,
+        reply: t.reply,
+      }))
 
   const catKeys = [
     'cleaning', 'moving', 'tutoring', 'delivery', 'handyman', 'events', 'it', 'gardening',
@@ -363,7 +429,7 @@ export default function HomeContent({ jobs, totalJobs }: { jobs: Job[]; totalJob
           <Link href="/signup" className="text-sm font-semibold text-blue-600 hover:underline">{h.seeAll}</Link>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-          {SAMPLE_TASKERS.map((tasker, i) => (
+          {displayHelpers.map((tasker, i) => (
             <TaskerCard key={i} tasker={tasker} bookLabel={h.bookNow} replyLabel={h.replyTime} doneLabel={h.tasksDone} />
           ))}
         </div>

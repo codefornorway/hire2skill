@@ -1,23 +1,45 @@
 import { createClient } from '@/lib/supabase/server'
 import HomeContent from './HomeContent'
 
+export type RealHelper = {
+  id: string
+  name: string
+  avatarUrl: string | null
+  location: string
+  categories: string[]
+  hourlyRate: number | null
+}
+
 const SAMPLE_JOBS = [
-  { title: 'Help moving furniture', location: 'Oslo', price: 500, category: 'Jobs', urgent: true },
-  { title: 'House cleaning – 3 rooms', location: 'Bergen', price: 350, category: 'Services', urgent: true },
-  { title: 'Event assistant – weekend', location: 'Trondheim', price: 280, category: 'Jobs', urgent: true },
-  { title: 'English tutoring for kids', location: 'Oslo', price: 400, category: 'Tutoring', urgent: false },
-  { title: 'Grocery delivery – elderly', location: 'Stavanger', price: 150, category: 'Services', urgent: false },
+  { title: 'Help moving furniture',    location: 'Oslo',      price: 500, category: 'Moving',   urgent: true },
+  { title: 'House cleaning – 3 rooms', location: 'Bergen',    price: 350, category: 'Cleaning', urgent: true },
+  { title: 'Event assistant – weekend',location: 'Trondheim', price: 280, category: 'Events',   urgent: true },
+  { title: 'English tutoring for kids',location: 'Oslo',      price: 400, category: 'Tutoring', urgent: false },
+  { title: 'Grocery delivery – elderly',location: 'Stavanger',price: 150, category: 'Delivery', urgent: false },
 ]
 
 export default async function Home() {
   const supabase = await createClient()
 
-  const { count: jobCount } = await supabase.from('posts').select('*', { count: 'exact', head: true })
-  const { data: recentPosts } = await supabase
-    .from('posts')
-    .select('id, title, category, location, price, created_at')
-    .order('created_at', { ascending: false })
-    .limit(5)
+  const [
+    { count: jobCount },
+    { data: recentPosts },
+    { data: helperProfiles },
+  ] = await Promise.all([
+    supabase.from('posts').select('*', { count: 'exact', head: true }),
+    supabase.from('posts')
+      .select('id, title, category, location, price, created_at')
+      .order('created_at', { ascending: false })
+      .limit(5),
+    supabase.from('profiles')
+      .select('id, display_name, avatar_url, categories, location, hourly_rate')
+      .eq('role', 'helper')
+      .not('display_name', 'is', null)
+      .not('location', 'is', null)
+      .not('categories', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(6),
+  ])
 
   const jobs = recentPosts && recentPosts.length >= 3
     ? recentPosts.map(p => ({ ...p, urgent: false }))
@@ -25,5 +47,17 @@ export default async function Home() {
 
   const totalJobs = jobCount && jobCount > 10 ? jobCount : 1200
 
-  return <HomeContent jobs={jobs} totalJobs={totalJobs} />
+  const helpers: RealHelper[] | null =
+    helperProfiles && helperProfiles.length >= 1
+      ? helperProfiles.slice(0, 3).map(p => ({
+          id: p.id,
+          name: p.display_name ?? 'Helper',
+          avatarUrl: p.avatar_url ?? null,
+          location: p.location ?? 'Norway',
+          categories: (p.categories as string[] | null) ?? [],
+          hourlyRate: p.hourly_rate ?? null,
+        }))
+      : null
+
+  return <HomeContent jobs={jobs} totalJobs={totalJobs} helpers={helpers} />
 }

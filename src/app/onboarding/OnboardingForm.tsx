@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useLanguage } from '@/context/LanguageContext'
 import {
@@ -42,6 +42,45 @@ const CATEGORIES: { key: string; Icon: React.ElementType; bg: string; color: str
   { key: 'Music Lessons',      bg: '#EEF2FF', color: '#4338CA', Icon: Music },
 ]
 
+const NORWAY_LOCATIONS = [
+  'Oslo – Sentrum', 'Oslo – Grünerløkka', 'Oslo – Grønland', 'Oslo – Tøyen',
+  'Oslo – Gamlebyen', 'Oslo – Sørenga', 'Oslo – Tjuvholmen', 'Oslo – Aker Brygge',
+  'Oslo – Bislett', 'Oslo – St. Hanshaugen', 'Oslo – Frogner', 'Oslo – Majorstuen',
+  'Oslo – Skøyen', 'Oslo – Lysaker', 'Oslo – Bygdøy', 'Oslo – Ullern',
+  'Oslo – Røa', 'Oslo – Vinderen', 'Oslo – Holmenkollen', 'Oslo – Sagene',
+  'Oslo – Sandaker', 'Oslo – Storo', 'Oslo – Nydalen', 'Oslo – Sinsen',
+  'Oslo – Grefsen', 'Oslo – Kjelsås', 'Oslo – Tåsen', 'Oslo – Alna',
+  'Oslo – Furuset', 'Oslo – Lindeberg', 'Oslo – Trosterud', 'Oslo – Haugerud',
+  'Oslo – Teisen', 'Oslo – Grorud', 'Oslo – Ammerud', 'Oslo – Romsås',
+  'Oslo – Stovner', 'Oslo – Haugenstua', 'Oslo – Vestli', 'Oslo – Bjerke',
+  'Oslo – Helsfyr', 'Oslo – Nordstrand', 'Oslo – Ljan', 'Oslo – Ekeberg',
+  'Oslo – Lambertseter', 'Oslo – Manglerud', 'Oslo – Ryen', 'Oslo – Bryn',
+  'Oslo – Oppsal', 'Oslo – Bøler', 'Oslo – Holmlia', 'Oslo – Mortensrud',
+  'Bergen – Sentrum', 'Bergen – Bergenhus', 'Bergen – Sandviken', 'Bergen – Nygårdshøyden',
+  'Bergen – Nordnes', 'Bergen – Møhlenpris', 'Bergen – Fana', 'Bergen – Nesttun',
+  'Bergen – Paradis', 'Bergen – Fyllingsdalen', 'Bergen – Laksevåg', 'Bergen – Loddefjord',
+  'Bergen – Åsane', 'Bergen – Flaktveit', 'Bergen – Arna',
+  'Trondheim – Midtbyen', 'Trondheim – Nedre Elvehavn', 'Trondheim – Møllenberg',
+  'Trondheim – Rosenborg', 'Trondheim – Strindheim', 'Trondheim – Ranheim',
+  'Trondheim – Lerkendal', 'Trondheim – Singsaker', 'Trondheim – Nardo',
+  'Trondheim – Heimdal', 'Trondheim – Saupstad', 'Trondheim – Byåsen',
+  'Stavanger – Sentrum', 'Stavanger – Stavanger Øst', 'Stavanger – Storhaug',
+  'Stavanger – Hillevåg', 'Stavanger – Hundvåg', 'Stavanger – Madla',
+  'Stavanger – Tasta', 'Stavanger – Eiganes', 'Stavanger – Våland',
+  'Drammen – Bragernes', 'Drammen – Strømsø', 'Drammen – Fjell', 'Drammen – Konnerud',
+  'Kristiansand', 'Tromsø', 'Sandnes', 'Fredrikstad', 'Sarpsborg',
+  'Bodø', 'Sandefjord', 'Ålesund', 'Tønsberg', 'Moss', 'Hamar',
+  'Porsgrunn', 'Skien', 'Arendal', 'Haugesund', 'Larvik', 'Halden',
+  'Lillehammer', 'Molde', 'Harstad', 'Gjøvik', 'Horten', 'Kongsberg',
+  'Bærum', 'Asker', 'Jessheim', 'Lillestrøm', 'Lørenskog', 'Ski',
+  'Oppegård', 'Ås', 'Nesodden', 'Frogn', 'Vestby', 'Ullensaker',
+  'Nannestad', 'Eidsvoll', 'Nittedal', 'Rælingen', 'Skedsmo',
+  'Karmøy', 'Sola', 'Askøy', 'Kongsvinger', 'Elverum', 'Brumunddal',
+  'Namsos', 'Steinkjer', 'Levanger', 'Stjørdal',
+  'Alta', 'Hammerfest', 'Vadsø', 'Kirkenes', 'Narvik',
+  'Finnsnes', 'Svolvær', 'Mo i Rana',
+]
+
 function ProgressBar({ value }: { value: number }) {
   return (
     <div className="w-full bg-gray-100 rounded-full h-2">
@@ -80,21 +119,68 @@ export default function OnboardingForm({ userId, userEmail }: { userId: string; 
   const [hourlyRate, setHourlyRate] = useState('')
   const [categories, setCategories] = useState<string[]>([])
   const [location, setLocation] = useState('')
+  const [locSuggestions, setLocSuggestions] = useState<string[]>([])
+  const [showLocSuggestions, setShowLocSuggestions] = useState(false)
+  const locRef = useRef<HTMLDivElement>(null)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [serverError, setServerError] = useState('')
+  const [fieldErrors, setFieldErrors] = useState<{
+    displayName?: string
+    bio?: string
+    location?: string
+    categories?: string
+    hourlyRate?: string
+  }>({})
 
   const completion = role === 'helper'
     ? [displayName.trim(), bio.trim(), location.trim(), hourlyRate, categories.length > 0 ? 'y' : '']
         .filter(Boolean).length * 20
     : 100
 
+  useEffect(() => {
+    function onMouseDown(e: MouseEvent) {
+      if (locRef.current && !locRef.current.contains(e.target as Node)) setShowLocSuggestions(false)
+    }
+    document.addEventListener('mousedown', onMouseDown)
+    return () => document.removeEventListener('mousedown', onMouseDown)
+  }, [])
+
+  function handleLocationChange(val: string) {
+    setLocation(val)
+    if (val.trim().length >= 1) {
+      const matches = NORWAY_LOCATIONS.filter(l => l.toLowerCase().includes(val.toLowerCase())).slice(0, 8)
+      setLocSuggestions(matches)
+      setShowLocSuggestions(matches.length > 0)
+    } else {
+      setShowLocSuggestions(false)
+    }
+  }
+
+  function selectLocation(val: string) {
+    setLocation(val)
+    setShowLocSuggestions(false)
+  }
+
   function toggleCategory(cat: string) {
     setCategories(prev => prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat])
   }
 
+  function validate() {
+    const errs: typeof fieldErrors = {}
+    if (!displayName.trim()) errs.displayName = 'Name is required.'
+    else if (displayName.trim().length < 2) errs.displayName = 'Name must be at least 2 characters.'
+    if (!bio.trim()) errs.bio = 'Please write a short description about yourself.'
+    else if (bio.trim().length < 20) errs.bio = 'Description must be at least 20 characters.'
+    if (!location.trim()) errs.location = 'Please select your location.'
+    if (categories.length === 0) errs.categories = 'Please select at least one service category.'
+    if (hourlyRate && (isNaN(Number(hourlyRate)) || Number(hourlyRate) < 0))
+      errs.hourlyRate = 'Enter a valid rate (e.g. 350).'
+    return errs
+  }
+
   async function saveProfile(r: Role, extra: Record<string, unknown> = {}) {
     setLoading(true)
-    setError('')
+    setServerError('')
     const supabase = createClient()
     const { error: err } = await supabase.from('profiles').upsert({
       id: userId,
@@ -103,7 +189,7 @@ export default function OnboardingForm({ userId, userEmail }: { userId: string; 
       ...extra,
     })
     setLoading(false)
-    if (err) { setError(err.message); return false }
+    if (err) { setServerError(err.message); return false }
     return true
   }
 
@@ -119,7 +205,12 @@ export default function OnboardingForm({ userId, userEmail }: { userId: string; 
 
   async function handleHelperSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (categories.length === 0) { setError(o.selectCategory); return }
+    const errs = validate()
+    if (Object.keys(errs).length > 0) {
+      setFieldErrors(errs)
+      return
+    }
+    setFieldErrors({})
     const ok = await saveProfile('helper', {
       bio: bio.trim(),
       hourly_rate: hourlyRate ? Number(hourlyRate) : null,
@@ -194,8 +285,8 @@ export default function OnboardingForm({ userId, userEmail }: { userId: string; 
               {loading && (
                 <p className="text-center text-sm text-gray-400 mt-4">{o.settingUp}</p>
               )}
-              {error && (
-                <p className="text-center text-sm text-red-500 mt-4">{error}</p>
+              {serverError && (
+                <p className="text-center text-sm text-red-500 mt-4">{serverError}</p>
               )}
             </div>
           )}
@@ -220,9 +311,17 @@ export default function OnboardingForm({ userId, userEmail }: { userId: string; 
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                     {o.nameLabel} <span className="text-red-400">*</span>
                   </label>
-                  <input type="text" value={displayName} onChange={e => setDisplayName(e.target.value)} required
+                  <input type="text" value={displayName} onChange={e => { setDisplayName(e.target.value); setFieldErrors(p => ({ ...p, displayName: undefined })) }}
                     placeholder="e.g. Maria K."
-                    className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400 transition" />
+                    className={`w-full rounded-xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 transition ${
+                      fieldErrors.displayName ? 'border-red-400 focus:ring-red-100' : 'border-gray-200 focus:ring-blue-300 focus:border-blue-400'
+                    }`} />
+                  {fieldErrors.displayName && (
+                    <p className="mt-1.5 text-xs text-red-500 flex items-center gap-1">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                      {fieldErrors.displayName}
+                    </p>
+                  )}
                 </div>
 
                 {/* Bio */}
@@ -230,9 +329,17 @@ export default function OnboardingForm({ userId, userEmail }: { userId: string; 
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                     {o.aboutLabel} <span className="text-red-400">*</span>
                   </label>
-                  <textarea rows={3} value={bio} onChange={e => setBio(e.target.value)} required
+                  <textarea rows={3} value={bio} onChange={e => { setBio(e.target.value); setFieldErrors(p => ({ ...p, bio: undefined })) }}
                     placeholder="Describe your experience, skills, and what makes you great at this..."
-                    className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400 transition resize-none" />
+                    className={`w-full rounded-xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 transition resize-none ${
+                      fieldErrors.bio ? 'border-red-400 focus:ring-red-100' : 'border-gray-200 focus:ring-blue-300 focus:border-blue-400'
+                    }`} />
+                  {fieldErrors.bio && (
+                    <p className="mt-1.5 text-xs text-red-500 flex items-center gap-1">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                      {fieldErrors.bio}
+                    </p>
+                  )}
                 </div>
 
                 {/* Categories */}
@@ -240,11 +347,14 @@ export default function OnboardingForm({ userId, userEmail }: { userId: string; 
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     {o.servicesLabel} <span className="text-red-400">*</span>
                   </label>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <div className={`grid grid-cols-2 sm:grid-cols-4 gap-2 rounded-xl transition ${
+                    fieldErrors.categories ? 'ring-2 ring-red-200 p-2' : ''
+                  }`}>
                     {CATEGORIES.map(({ key, Icon, bg, color }) => {
                       const selected = categories.includes(key)
                       return (
-                        <button key={key} type="button" onClick={() => toggleCategory(key)}
+                        <button key={key} type="button"
+                          onClick={() => { toggleCategory(key); setFieldErrors(p => ({ ...p, categories: undefined })) }}
                           className="flex flex-col items-center gap-2 rounded-xl border-2 px-3 py-3 text-xs font-semibold transition-all"
                           style={selected
                             ? { borderColor: color, background: bg, color }
@@ -258,6 +368,12 @@ export default function OnboardingForm({ userId, userEmail }: { userId: string; 
                       )
                     })}
                   </div>
+                  {fieldErrors.categories && (
+                    <p className="mt-1.5 text-xs text-red-500 flex items-center gap-1">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                      {fieldErrors.categories}
+                    </p>
+                  )}
                 </div>
 
                 {/* Location + Rate */}
@@ -266,22 +382,67 @@ export default function OnboardingForm({ userId, userEmail }: { userId: string; 
                     <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                       {o.locationLabel} <span className="text-red-400">*</span>
                     </label>
-                    <input type="text" value={location} onChange={e => setLocation(e.target.value)} required
-                      placeholder="e.g. Oslo"
-                      className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400 transition" />
+                    <div ref={locRef} className="relative">
+                      <div className="relative">
+                        <svg className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                          width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                        </svg>
+                        <input
+                          type="text"
+                          value={location}
+                          onChange={e => { handleLocationChange(e.target.value); setFieldErrors(p => ({ ...p, location: undefined })) }}
+                          onFocus={() => { if (location.length >= 1) setShowLocSuggestions(locSuggestions.length > 0) }}
+                          placeholder="e.g. Oslo"
+                          className={`w-full rounded-xl border pl-9 pr-4 py-3 text-sm focus:outline-none focus:ring-2 transition ${
+                            fieldErrors.location ? 'border-red-400 focus:ring-red-100' : 'border-gray-200 focus:ring-blue-300 focus:border-blue-400'
+                          }`}
+                        />
+                      </div>
+                      {showLocSuggestions && locSuggestions.length > 0 && (
+                        <ul className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+                          {locSuggestions.map(loc => (
+                            <li key={loc}>
+                              <button type="button" onMouseDown={() => selectLocation(loc)}
+                                className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-left hover:bg-blue-50 transition-colors">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                                </svg>
+                                {loc}
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                    {fieldErrors.location && (
+                      <p className="mt-1.5 text-xs text-red-500 flex items-center gap-1">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        {fieldErrors.location}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                       {o.rateLabel}
                     </label>
-                    <input type="number" min="0" value={hourlyRate} onChange={e => setHourlyRate(e.target.value)}
+                    <input type="number" min="0" value={hourlyRate}
+                      onChange={e => { setHourlyRate(e.target.value); setFieldErrors(p => ({ ...p, hourlyRate: undefined })) }}
                       placeholder="e.g. 350"
-                      className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400 transition" />
+                      className={`w-full rounded-xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 transition ${
+                        fieldErrors.hourlyRate ? 'border-red-400 focus:ring-red-100' : 'border-gray-200 focus:ring-blue-300 focus:border-blue-400'
+                      }`} />
+                    {fieldErrors.hourlyRate && (
+                      <p className="mt-1.5 text-xs text-red-500 flex items-center gap-1">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        {fieldErrors.hourlyRate}
+                      </p>
+                    )}
                   </div>
                 </div>
 
-                {error && (
-                  <p className="text-sm text-red-500 bg-red-50 rounded-xl px-4 py-3">{error}</p>
+                {serverError && (
+                  <p className="text-sm text-red-500 bg-red-50 rounded-xl px-4 py-3">{serverError}</p>
                 )}
 
                 <button type="submit" disabled={loading}

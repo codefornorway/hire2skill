@@ -7,6 +7,20 @@ export default async function Navbar() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
+  let unreadCount = 0
+  if (user) {
+    try {
+      const { count } = await supabase
+        .from('messages')
+        .select('*', { count: 'exact', head: true })
+        .neq('sender_id', user.id)
+        .is('read_at', null)
+      unreadCount = count ?? 0
+    } catch {
+      // messages table not yet created
+    }
+  }
+
   return (
     <nav className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-50 shadow-sm">
       <div className="mx-auto flex max-w-6xl items-center justify-between">
@@ -22,8 +36,13 @@ export default async function Navbar() {
 
           {user ? (
             <>
-              <Link href="/chat" className="hidden sm:block text-sm font-medium text-gray-500 hover:text-blue-600 transition-colors">
+              <Link href="/chat" className="hidden sm:flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-blue-600 transition-colors">
                 Messages
+                {unreadCount > 0 && (
+                  <span className="rounded-full bg-blue-600 px-1.5 py-0.5 text-[11px] font-bold text-white leading-none">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
               </Link>
               <Link href="/profile" className="hidden sm:block text-sm font-medium text-gray-500 hover:text-blue-600 transition-colors">
                 Profile

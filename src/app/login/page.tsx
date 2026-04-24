@@ -81,14 +81,10 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            style={{
-              background: 'linear-gradient(90deg, #2563EB, #38BDF8)',
-              color: '#ffffff',
-              opacity: loading ? 0.6 : 1,
-            }}
-            className="w-full rounded-lg px-4 py-3 text-sm font-semibold"
+            className={`w-full rounded-lg py-3 text-sm font-semibold text-white transition-opacity ${loading ? 'opacity-60' : 'hover:opacity-90'}`}
+            style={{ background: 'linear-gradient(90deg,#2563EB,#38BDF8)' }}
           >
-            {loading ? t.login.submitting : t.login.submit}
+            {loading ? (t.login?.submitting ?? 'Logging in…') : (t.login?.submit ?? 'Log in')}
           </button>
         </form>
 
