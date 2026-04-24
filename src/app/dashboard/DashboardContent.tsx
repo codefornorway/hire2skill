@@ -240,6 +240,16 @@ function BookingCard({
     await supabase.from('bookings').update({ status }).eq('id', booking.id)
     setUpdating(false)
     onUpdate(booking.id, status)
+    if (status === 'accepted') {
+      fetch('/api/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'booking-accepted',
+          bookingData: { id: booking.id, poster_id: booking.poster_id, helper_id: booking.helper_id },
+        }),
+      }).catch(() => {})
+    }
   }
 
   return (

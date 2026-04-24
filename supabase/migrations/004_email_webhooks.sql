@@ -1,19 +1,6 @@
 -- Email notification webhooks via pg_net (Supabase built-in extension)
--- These call the deployed Supabase Edge Functions on relevant table events.
---
--- BEFORE running this migration:
---   1. Deploy the three edge functions (see supabase/functions/)
---   2. Set the RESEND_API_KEY, APP_URL secrets on the functions
---   3. Replace <PROJECT_REF> below with your Supabase project reference
---      (found in Settings → General → Reference ID)
---   4. Replace <SUPABASE_ANON_KEY> with your project's anon key
---      (found in Settings → API → Project API keys)
---
--- Alternatively, use the Supabase Dashboard → Database → Webhooks UI
--- to point each trigger to the function URLs — no SQL needed.
-
--- Create private schema for internal helper functions
-CREATE SCHEMA IF NOT EXISTS private;
+-- Replace <PROJECT_REF> and <SUPABASE_ANON_KEY> before running.
+-- Find them in: Settings → General (ref) and Settings → API (anon key)
 
 -- Enable pg_net if not already enabled
 CREATE EXTENSION IF NOT EXISTS pg_net WITH SCHEMA extensions;
@@ -21,7 +8,7 @@ CREATE EXTENSION IF NOT EXISTS pg_net WITH SCHEMA extensions;
 -- ──────────────────────────────────────────────────────────────────────────────
 -- Helper: call an edge function asynchronously (fire-and-forget)
 -- ──────────────────────────────────────────────────────────────────────────────
-CREATE OR REPLACE FUNCTION private.call_edge_function(
+CREATE OR REPLACE FUNCTION public.call_edge_function(
   function_name text,
   payload       jsonb
 ) RETURNS void
@@ -32,14 +19,15 @@ DECLARE
   url          text;
 BEGIN
   url := 'https://' || project_ref || '.supabase.co/functions/v1/' || function_name;
-  PERFORM extensions.http_post(
-    url,
-    payload::text,
-    'application/json',
-    ARRAY[extensions.http_header('Authorization', 'Bearer ' || anon_key)]
+  PERFORM net.http_post(
+    url         := url,
+    body        := payload::text,
+    headers     := jsonb_build_object(
+                     'Content-Type', 'application/json',
+                     'Authorization', 'Bearer ' || anon_key
+                   )
   );
 EXCEPTION WHEN OTHERS THEN
-  -- Never let notification errors break the main transaction
   NULL;
 END;
 $$;
@@ -47,10 +35,10 @@ $$;
 -- ──────────────────────────────────────────────────────────────────────────────
 -- Trigger: new booking → notify helper
 -- ──────────────────────────────────────────────────────────────────────────────
-CREATE OR REPLACE FUNCTION private.trg_notify_new_booking()
+CREATE OR REPLACE FUNCTION public.trg_notify_new_booking()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
-  PERFORM private.call_edge_function(
+  PERFORM public.call_edge_function(
     'notify-new-booking',
     jsonb_build_object(
       'type', 'INSERT',
@@ -65,16 +53,16 @@ $$;
 DROP TRIGGER IF EXISTS trg_notify_new_booking ON public.bookings;
 CREATE TRIGGER trg_notify_new_booking
   AFTER INSERT ON public.bookings
-  FOR EACH ROW EXECUTE FUNCTION private.trg_notify_new_booking();
+  FOR EACH ROW EXECUTE FUNCTION public.trg_notify_new_booking();
 
 -- ──────────────────────────────────────────────────────────────────────────────
 -- Trigger: booking accepted → notify poster
 -- ──────────────────────────────────────────────────────────────────────────────
-CREATE OR REPLACE FUNCTION private.trg_notify_booking_accepted()
+CREATE OR REPLACE FUNCTION public.trg_notify_booking_accepted()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
   IF NEW.status = 'accepted' AND (OLD.status IS DISTINCT FROM 'accepted') THEN
-    PERFORM private.call_edge_function(
+    PERFORM public.call_edge_function(
       'notify-booking-accepted',
       jsonb_build_object(
         'type', 'UPDATE',
@@ -90,15 +78,15 @@ $$;
 DROP TRIGGER IF EXISTS trg_notify_booking_accepted ON public.bookings;
 CREATE TRIGGER trg_notify_booking_accepted
   AFTER UPDATE ON public.bookings
-  FOR EACH ROW EXECUTE FUNCTION private.trg_notify_booking_accepted();
+  FOR EACH ROW EXECUTE FUNCTION public.trg_notify_booking_accepted();
 
 -- ──────────────────────────────────────────────────────────────────────────────
 -- Trigger: new message → notify recipient
 -- ──────────────────────────────────────────────────────────────────────────────
-CREATE OR REPLACE FUNCTION private.trg_notify_new_message()
+CREATE OR REPLACE FUNCTION public.trg_notify_new_message()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
-  PERFORM private.call_edge_function(
+  PERFORM public.call_edge_function(
     'notify-new-message',
     jsonb_build_object(
       'type', 'INSERT',
@@ -113,4 +101,4 @@ $$;
 DROP TRIGGER IF EXISTS trg_notify_new_message ON public.messages;
 CREATE TRIGGER trg_notify_new_message
   AFTER INSERT ON public.messages
-  FOR EACH ROW EXECUTE FUNCTION private.trg_notify_new_message();
+  FOR EACH ROW EXECUTE FUNCTION public.trg_notify_new_message();

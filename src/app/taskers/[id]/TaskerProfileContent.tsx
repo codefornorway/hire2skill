@@ -108,20 +108,29 @@ export default function TaskerProfileContent({
     setReqError('')
 
     const supabase = createClient()
-    const { error } = await supabase.from('bookings').insert({
+    const { data: inserted, error } = await supabase.from('bookings').insert({
       poster_id: currentUserId,
       helper_id: tasker.id,
       message: message.trim(),
       scheduled_date: scheduledDate || null,
       budget: budget ? Number(budget) : null,
       status: 'pending',
-    })
+    }).select('id').single()
 
     setSending(false)
     if (error) {
       setReqError(error.message)
     } else {
       setSent(true)
+      fetch('/api/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'new-booking',
+          bookingId: inserted?.id,
+          bookingData: { helper_id: tasker.id, poster_id: currentUserId },
+        }),
+      }).catch(() => {})
     }
   }
 

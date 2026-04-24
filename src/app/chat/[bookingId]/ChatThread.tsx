@@ -97,6 +97,16 @@ export default function ChatThread({
 
     if (data) {
       setMessages(prev => prev.map(m => m.id === optimisticId ? (data as ChatMessage) : m))
+      fetch('/api/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'new-message',
+          senderId: currentUserId,
+          bookingId,
+          preview: text,
+        }),
+      }).catch(() => {})
     }
     setSending(false)
   }
