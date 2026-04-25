@@ -1,4 +1,4 @@
-# SkillLink 🇳🇴
+# Hire2Skill 🇳🇴
 
 > Connects people with local opportunities — a community platform for small jobs, services, and micro-businesses.
 
@@ -6,7 +6,7 @@
 
 ## 🔭 Vision
 
-SkillLink helps people in Norway — including refugees, students, and local communities — find work, offer skills, and connect with opportunities in a simple and accessible way.
+Hire2Skill helps people in Norway — including refugees, students, and local communities — find work, offer skills, and connect with opportunities in a simple and accessible way.
 
 ---
 
@@ -54,7 +54,7 @@ User → Frontend → Backend API → Services → Database + AI
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/skilllink.git
+git clone https://github.com/hire2skill.git
 cd skilllink
 ```
 
