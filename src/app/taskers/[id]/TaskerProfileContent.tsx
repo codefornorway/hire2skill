@@ -6,6 +6,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { useLanguage } from '@/context/LanguageContext'
+import { logClientEvent } from '@/lib/telemetry'
+import { postNotify } from '@/lib/client-notify'
 
 type Tasker = {
   id: string
@@ -133,19 +135,18 @@ export default function TaskerProfileContent({
     } else {
       setSent(true)
       setNotifyWarn(null)
-      try {
-        const res = await fetch('/api/notify', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'new-booking',
-            bookingId: inserted?.id,
-            bookingData: { helper_id: tasker.id, poster_id: currentUserId },
-          }),
-        })
-        if (!res.ok) setNotifyWarn(d.notifyEmailWarn)
-      } catch {
+      const notify = await postNotify({
+        type: 'new-booking',
+        bookingId: inserted?.id,
+        bookingData: { helper_id: tasker.id, poster_id: currentUserId },
+      })
+      if (!notify.ok) {
         setNotifyWarn(d.notifyEmailWarn)
+        logClientEvent('tasker.request.notify', 'warn', 'New booking notify request failed', {
+          taskerId: tasker.id,
+          reason: notify.reason,
+          status: notify.status,
+        })
       }
     }
   }

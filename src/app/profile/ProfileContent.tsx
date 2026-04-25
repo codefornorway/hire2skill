@@ -29,6 +29,9 @@ type Profile = {
   business_website: string | null
   business_description: string | null
   video_intro_url: string | null
+  languages: string[] | null
+  brings_tools: boolean | null
+  can_invoice: boolean | null
 }
 
 type Post = {
@@ -499,6 +502,9 @@ export default function ProfileContent({
   const [avatar, setAvatar]       = useState<string | null>(init?.avatar_url ?? null)
   const [role,   setRole]         = useState<RoleType>((init?.role as RoleType) ?? 'poster')
   const [videoUrl, setVideoUrl]   = useState(init?.video_intro_url ?? '')
+  const [helperLanguages, setHelperLanguages] = useState<string[]>(init?.languages ?? [])
+  const [bringsTools, setBringsTools] = useState(Boolean(init?.brings_tools))
+  const [canInvoice, setCanInvoice] = useState(Boolean(init?.can_invoice))
   const [avatarErr, setAvatarErr] = useState('')
   const [profSaving, setProfSaving] = useState(false)
   const [profSaved,  setProfSaved]  = useState(false)
@@ -596,6 +602,9 @@ export default function ProfileContent({
       id: user.id, role, display_name: name, bio, location,
       hourly_rate: rate ? Number(rate) : null, categories: cats, avatar_url: avatar,
       video_intro_url: videoUrl.trim() || null,
+      languages: helperLanguages,
+      brings_tools: bringsTools,
+      can_invoice: canInvoice,
     })
     setProfSaving(false); setProfSaved(true)
     setTimeout(() => setProfSaved(false), 3000)
@@ -846,6 +855,37 @@ export default function ProfileContent({
                         />
                         <p className="mt-1 text-xs text-gray-400">A short 30–60 s video boosts trust with clients and appears on your profile.</p>
                       </div>
+                      <div>
+                        <FieldLabel>Languages</FieldLabel>
+                        <div className="flex flex-wrap gap-2 mt-0.5">
+                          {[
+                            { key: 'no', label: 'Norsk' },
+                            { key: 'en', label: 'English' },
+                          ].map(opt => (
+                            <button key={opt.key} type="button"
+                              onClick={() => setHelperLanguages(prev =>
+                                prev.includes(opt.key) ? prev.filter(v => v !== opt.key) : [...prev, opt.key]
+                              )}
+                              className={`px-3 py-1.5 rounded-full text-xs font-semibold border-2 transition-all ${
+                                helperLanguages.includes(opt.key)
+                                  ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                  : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'
+                              }`}>
+                              {opt.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <label className="flex items-center justify-between rounded-xl border border-gray-200 px-3 py-2.5 text-sm text-gray-700">
+                          <span>Brings own tools</span>
+                          <input type="checkbox" checked={bringsTools} onChange={e => setBringsTools(e.target.checked)} />
+                        </label>
+                        <label className="flex items-center justify-between rounded-xl border border-gray-200 px-3 py-2.5 text-sm text-gray-700">
+                          <span>Can invoice (VAT/business)</span>
+                          <input type="checkbox" checked={canInvoice} onChange={e => setCanInvoice(e.target.checked)} />
+                        </label>
+                      </div>
                     </>
                   )}
                 </div>
@@ -856,6 +896,9 @@ export default function ProfileContent({
                     setLocation(init?.location ?? ''); setRate(String(init?.hourly_rate ?? ''))
                     setCats(init?.categories ?? []); setRole((init?.role as RoleType) ?? 'poster')
                     setVideoUrl(init?.video_intro_url ?? '')
+                    setHelperLanguages(init?.languages ?? [])
+                    setBringsTools(Boolean(init?.brings_tools))
+                    setCanInvoice(Boolean(init?.can_invoice))
                     setAvatarErr('')
                   }} />
 

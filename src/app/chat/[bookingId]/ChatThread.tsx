@@ -5,6 +5,9 @@ import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import Image from 'next/image'
 import type { ChatMessage } from './page'
+import { logClientEvent } from '@/lib/telemetry'
+import { useLanguage } from '@/context/LanguageContext'
+import { postNotify } from '@/lib/client-notify'
 
 function Avatar({ name, avatarUrl, size = 8 }: { name: string | null; avatarUrl: string | null; size?: number }) {
   const initials = (name ?? '?').split(' ').slice(0, 2).map(w => w[0]?.toUpperCase() ?? '').join('')
@@ -44,6 +47,8 @@ export default function ChatThread({
   otherAvatar: string | null
   initialMessages: ChatMessage[]
 }) {
+  const { t } = useLanguage()
+  const c = t.chatPage
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages)
   const [body, setBody] = useState('')
   const [sending, setSending] = useState(false)
@@ -101,6 +106,7 @@ export default function ChatThread({
     if (error || !data) {
       setMessages(prev => prev.filter(m => m.id !== optimisticId))
       setSendError(error?.message ?? 'Could not send message. Check your connection and try again.')
+      logClientEvent('chat.send', 'warn', 'Message insert failed', { bookingId, error: error?.message ?? 'unknown' })
       setPendingRetry(text)
       setSending(false)
       return
@@ -109,22 +115,15 @@ export default function ChatThread({
     setMessages(prev => prev.map(m => m.id === optimisticId ? (data as ChatMessage) : m))
     setPendingRetry(null)
 
-    try {
-      const res = await fetch('/api/notify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'new-message',
-          senderId: currentUserId,
-          bookingId,
-          preview: text,
-        }),
-      })
-      if (!res.ok) {
-        setSendError('Message delivered, but email/push notification may be delayed.')
-      }
-    } catch {
+    const notify = await postNotify({
+      type: 'new-message',
+      senderId: currentUserId,
+      bookingId,
+      preview: text,
+    })
+    if (!notify.ok) {
       setSendError('Message delivered, but email/push notification may be delayed.')
+      logClientEvent('chat.notify', 'warn', 'Notify request failed', { bookingId, reason: notify.reason, status: notify.status })
     }
 
     setSending(false)
@@ -161,8 +160,8 @@ export default function ChatThread({
         </Link>
         <Avatar name={otherName} avatarUrl={otherAvatar} size={9} />
         <div>
-          <p className="text-sm font-bold text-gray-900">{otherName ?? 'Unknown'}</p>
-          <p className="text-xs text-green-600 font-medium">Booking accepted</p>
+          <p className="text-sm font-bold text-gray-900">{otherName ?? c.unknownUser}</p>
+          <p className="text-xs text-green-600 font-medium">{c.bookingAccepted}</p>
         </div>
       </div>
 
@@ -170,7 +169,7 @@ export default function ChatThread({
       <div className="flex-1 overflow-y-auto px-6 py-4 flex flex-col bg-gray-50">
         {messages.length === 0 && (
           <div className="flex-1 flex items-center justify-center">
-            <p className="text-sm text-gray-400">No messages yet. Say hello!</p>
+            <p className="text-sm text-gray-400">{c.emptyThread}</p>
           </div>
         )}
 
@@ -232,7 +231,7 @@ export default function ChatThread({
         <input
           value={body}
           onChange={e => setBody(e.target.value)}
-          placeholder="Type a message…"
+          placeholder={c.inputPlaceholder}
           disabled={sending}
           className="flex-1 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-colors"
         />

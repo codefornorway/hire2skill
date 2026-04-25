@@ -5,6 +5,8 @@ import Image from 'next/image'
 import React, { useState } from 'react'
 import { useLanguage } from '@/context/LanguageContext'
 import { createClient } from '@/lib/supabase/client'
+import { logClientEvent } from '@/lib/telemetry'
+import { postNotify } from '@/lib/client-notify'
 import type { BookingItem, Post } from './page'
 
 type Props = {
@@ -388,19 +390,19 @@ function BookingCard({
     setUpdating(false)
     onUpdate(booking.id, status)
     if (status === 'accepted') {
-      try {
-        const res = await fetch('/api/notify', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'booking-accepted',
-            bookingData: { id: booking.id, poster_id: booking.poster_id, helper_id: booking.helper_id },
-          }),
-        })
-        if (!res.ok) setNotifyWarn(d.notifyEmailWarn)
-        else setNotifyWarn(null)
-      } catch {
+      const notify = await postNotify({
+        type: 'booking-accepted',
+        bookingData: { id: booking.id, poster_id: booking.poster_id, helper_id: booking.helper_id },
+      })
+      if (!notify.ok) {
         setNotifyWarn(d.notifyEmailWarn)
+        logClientEvent('dashboard.notify', 'warn', 'Booking accepted notify request failed', {
+          bookingId: booking.id,
+          reason: notify.reason,
+          status: notify.status,
+        })
+      } else {
+        setNotifyWarn(null)
       }
     }
   }

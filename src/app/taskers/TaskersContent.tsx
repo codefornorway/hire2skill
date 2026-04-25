@@ -22,6 +22,9 @@ type Tasker = {
   review_count?: number
   response_hours: number
   avatar_url?: string | null
+  languages?: string[] | null
+  brings_tools?: boolean | null
+  can_invoice?: boolean | null
 }
 
 function isElite(t: Tasker) {
@@ -330,10 +333,20 @@ export default function TaskersContent({ taskers, activeCategory }: { taskers: T
       )
     }
 
-    if (wantNorwegian) list = list.filter(t => norwegianSignals.test(t.bio))
-    if (wantEnglish) list = list.filter(t => englishSignals.test(t.bio))
-    if (wantTools) list = list.filter(t => toolSignals.test(t.bio))
-    if (wantInvoice) list = list.filter(t => invoiceSignals.test(t.bio))
+    if (wantNorwegian) {
+      list = list.filter(t => {
+        const langs = (t.languages ?? []).map(l => l.toLowerCase())
+        return langs.includes('no') || langs.includes('nb') || langs.includes('nn') || norwegianSignals.test(t.bio)
+      })
+    }
+    if (wantEnglish) {
+      list = list.filter(t => {
+        const langs = (t.languages ?? []).map(l => l.toLowerCase())
+        return langs.includes('en') || englishSignals.test(t.bio)
+      })
+    }
+    if (wantTools) list = list.filter(t => t.brings_tools === true || toolSignals.test(t.bio))
+    if (wantInvoice) list = list.filter(t => t.can_invoice === true || invoiceSignals.test(t.bio))
 
     if (category !== 'All') {
       const activeKey = toCategoryKey(category)

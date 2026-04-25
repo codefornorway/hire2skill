@@ -4,6 +4,7 @@ import { createClient as createSupabaseClient } from '@/lib/supabase/server'
 import webpush from 'web-push'
 import { getClientIp, isRateLimited, sanitizeHtml } from '@/lib/api-security'
 import { SERVER_ENV, getSupabaseServiceEnv } from '@/lib/env/server'
+import { logServerEvent } from '@/lib/telemetry'
 
 const RESEND_API_KEY = SERVER_ENV.RESEND_API_KEY
 const APP_URL = SERVER_ENV.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
@@ -36,7 +37,9 @@ async function sendPush(userId: string, admin: any, payload: { title: string; bo
         )
       ),
     )
-  } catch {}
+  } catch (err) {
+    logServerEvent('notify.push', 'warn', 'Failed to send push notification', { userId, error: String(err) })
+  }
 }
 
 function layout(body: string) {
@@ -224,7 +227,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true })
   } catch (err) {
-    console.error('[notify]', err)
+    logServerEvent('notify.route', 'error', 'Unhandled notify error', { error: String(err) })
     return NextResponse.json({ error: String(err) }, { status: 500 })
   }
 }

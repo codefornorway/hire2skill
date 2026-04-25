@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
+import { useLanguage } from '@/context/LanguageContext'
 import type { Conversation } from './page'
 
 function timeAgo(iso: string): string {
@@ -31,10 +32,12 @@ function Avatar({ name, avatarUrl }: { name: string | null; avatarUrl: string | 
 }
 
 export default function ChatContent({ conversations }: { conversations: Conversation[] }) {
+  const { t } = useLanguage()
+  const c = t.chatPage
   return (
     <main className="mx-auto max-w-2xl px-6 py-10 w-full">
-      <h1 className="text-2xl font-bold text-gray-900 mb-1">Messages</h1>
-      <p className="text-sm text-gray-400 mb-6">Conversations with helpers and task posters.</p>
+      <h1 className="text-2xl font-bold text-gray-900 mb-1">{c.title}</h1>
+      <p className="text-sm text-gray-400 mb-6">{c.subtitle}</p>
 
       {conversations.length === 0 ? (
         <div className="rounded-xl border border-dashed border-gray-300 bg-white p-12 text-center">
@@ -43,8 +46,8 @@ export default function ChatContent({ conversations }: { conversations: Conversa
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
             </svg>
           </div>
-          <p className="text-sm font-semibold text-gray-700 mb-1">No conversations yet</p>
-          <p className="text-sm text-gray-400">Send a booking request to a helper to start a conversation.</p>
+          <p className="text-sm font-semibold text-gray-700 mb-1">{c.emptyTitle}</p>
+          <p className="text-sm text-gray-400">{c.emptySubtitle}</p>
         </div>
       ) : (
         <div className="flex flex-col gap-1">
@@ -63,17 +66,17 @@ export default function ChatContent({ conversations }: { conversations: Conversa
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2">
                   <p className={`text-sm truncate ${conv.unreadCount > 0 ? 'font-bold text-gray-900' : 'font-semibold text-gray-800'}`}>
-                    {conv.otherName ?? 'Unknown user'}
+                    {conv.otherName ?? c.unknownUser}
                   </p>
                   <div className="flex items-center gap-2 shrink-0">
                     {conv.status === 'pending' && (
-                      <span className="rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-700">Pending</span>
+                      <span className="rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-700">{c.statusPending}</span>
                     )}
                     {conv.status === 'accepted' && (
-                      <span className="rounded-full bg-green-50 border border-green-200 px-2 py-0.5 text-[10px] font-bold text-green-700">Active</span>
+                      <span className="rounded-full bg-green-50 border border-green-200 px-2 py-0.5 text-[10px] font-bold text-green-700">{c.statusActive}</span>
                     )}
                     {conv.status === 'completed' && (
-                      <span className="rounded-full bg-gray-100 border border-gray-200 px-2 py-0.5 text-[10px] font-bold text-gray-500">Done</span>
+                      <span className="rounded-full bg-gray-100 border border-gray-200 px-2 py-0.5 text-[10px] font-bold text-gray-500">{c.statusDone}</span>
                     )}
                     {conv.lastMessageAt && (
                       <span className="text-xs text-gray-400">{timeAgo(conv.lastMessageAt)}</span>
@@ -81,7 +84,7 @@ export default function ChatContent({ conversations }: { conversations: Conversa
                   </div>
                 </div>
                 <p className={`text-xs mt-0.5 truncate ${conv.unreadCount > 0 ? 'text-gray-700 font-medium' : 'text-gray-400'}`}>
-                  {conv.lastMessage ?? 'No messages yet — say hello!'}
+                  {conv.lastMessage ?? c.emptyMessageHint}
                 </p>
               </div>
 
