@@ -5,6 +5,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
+import { useLanguage } from '@/context/LanguageContext'
 
 type Tasker = {
   id: string
@@ -18,6 +19,7 @@ type Tasker = {
   rating: number
   response_hours: number
   avatar_url?: string | null
+  video_intro_url?: string | null
 }
 
 function isElite(t: Tasker) {
@@ -92,6 +94,8 @@ export default function TaskerProfileContent({
   isLoggedIn: boolean
   currentUserId: string | null
 }) {
+  const { t } = useLanguage()
+  const d = t.dashboard
   const [showRequest, setShowRequest] = useState(false)
   const [message, setMessage] = useState('')
   const [scheduledDate, setScheduledDate] = useState('')
@@ -99,6 +103,7 @@ export default function TaskerProfileContent({
   const [sent, setSent] = useState(false)
   const [sending, setSending] = useState(false)
   const [reqError, setReqError] = useState('')
+  const [notifyWarn, setNotifyWarn] = useState<string | null>(null)
 
   const initials = tasker.display_name.split(' ').slice(0, 2).map(w => w[0]?.toUpperCase() ?? '').join('')
   const avatarColor = AVATAR_COLORS[tasker.id.charCodeAt(tasker.id.length - 1) % AVATAR_COLORS.length]
@@ -127,15 +132,21 @@ export default function TaskerProfileContent({
       setReqError(error.message)
     } else {
       setSent(true)
-      fetch('/api/notify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'new-booking',
-          bookingId: inserted?.id,
-          bookingData: { helper_id: tasker.id, poster_id: currentUserId },
-        }),
-      }).catch(() => {})
+      setNotifyWarn(null)
+      try {
+        const res = await fetch('/api/notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'new-booking',
+            bookingId: inserted?.id,
+            bookingData: { helper_id: tasker.id, poster_id: currentUserId },
+          }),
+        })
+        if (!res.ok) setNotifyWarn(d.notifyEmailWarn)
+      } catch {
+        setNotifyWarn(d.notifyEmailWarn)
+      }
     }
   }
 
@@ -226,6 +237,31 @@ export default function TaskerProfileContent({
               <h2 className="text-base font-extrabold text-gray-900 mb-4">About</h2>
               <p className="text-sm text-gray-600 leading-relaxed">{tasker.bio}</p>
             </div>
+
+            {/* Video intro */}
+            {tasker.video_intro_url && (
+              <div className="bg-white rounded-2xl border border-gray-200 p-8">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="h-8 w-8 rounded-xl bg-red-50 flex items-center justify-center">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                  </div>
+                  <h2 className="text-base font-extrabold text-gray-900">Video intro</h2>
+                </div>
+                <div className="relative w-full rounded-xl overflow-hidden bg-black" style={{ paddingTop: '56.25%' }}>
+                  <iframe
+                    src={tasker.video_intro_url.includes('youtube.com/watch?v=')
+                      ? tasker.video_intro_url.replace('watch?v=', 'embed/')
+                      : tasker.video_intro_url.includes('youtu.be/')
+                      ? tasker.video_intro_url.replace('youtu.be/', 'youtube.com/embed/')
+                      : tasker.video_intro_url}
+                    title={`${tasker.display_name} intro video`}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    className="absolute inset-0 w-full h-full"
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Skills */}
             <div className="bg-white rounded-2xl border border-gray-200 p-8">
@@ -372,14 +408,14 @@ export default function TaskerProfileContent({
                 <button
                   onClick={() => setShowRequest(true)}
                   className="w-full rounded-xl py-3.5 text-sm font-bold text-white transition-opacity hover:opacity-90"
-                  style={{ background: 'linear-gradient(90deg,#2563EB,#38BDF8)' }}>
+                  style={{ background: 'var(--sl-gradient-primary)' }}>
                   Send request
                 </button>
               ) : (
                 <Link
                   href={`/login?next=/taskers/${tasker.id}`}
                   className="block w-full rounded-xl py-3.5 text-sm font-bold text-white text-center transition-opacity hover:opacity-90"
-                  style={{ background: 'linear-gradient(90deg,#2563EB,#38BDF8)' }}>
+                  style={{ background: 'var(--sl-gradient-primary)' }}>
                   Log in to send request
                 </Link>
               )}
@@ -409,10 +445,23 @@ export default function TaskerProfileContent({
                 <p className="text-sm text-gray-500 mb-6">
                   {tasker.display_name} will reply within {tasker.response_hours === 1 ? '1 hour' : `${tasker.response_hours} hours`}.
                 </p>
+                <div className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-left mb-4">
+                  <p className="text-xs font-bold text-blue-900 mb-1">{d.bookingNextTitle}</p>
+                  <ol className="text-[11px] text-blue-900/80 space-y-1 list-decimal list-inside">
+                    <li>{d.bookingNext1}</li>
+                    <li>{d.bookingNext2}</li>
+                    <li>{d.bookingNext3}</li>
+                  </ol>
+                </div>
+                {notifyWarn && (
+                  <p className="text-xs text-amber-900 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 mb-4">
+                    {notifyWarn}
+                  </p>
+                )}
                 <button
-                  onClick={() => { setShowRequest(false); setSent(false); setMessage('') }}
+                  onClick={() => { setShowRequest(false); setSent(false); setMessage(''); setNotifyWarn(null) }}
                   className="w-full rounded-xl py-3 text-sm font-bold text-white transition-opacity hover:opacity-90"
-                  style={{ background: 'linear-gradient(90deg,#2563EB,#38BDF8)' }}>
+                  style={{ background: 'var(--sl-gradient-primary)' }}>
                   Done
                 </button>
               </div>
@@ -480,7 +529,7 @@ export default function TaskerProfileContent({
                       type="submit"
                       disabled={sending || !message.trim()}
                       className="flex-1 rounded-xl py-3 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
-                      style={{ background: 'linear-gradient(90deg,#2563EB,#38BDF8)' }}>
+                      style={{ background: 'var(--sl-gradient-primary)' }}>
                       {sending ? 'Sending...' : 'Send request'}
                     </button>
                   </div>

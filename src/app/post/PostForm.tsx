@@ -4,41 +4,78 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import {
-  SprayCan, Truck, GraduationCap, Package, Wrench, PartyPopper, Monitor, Leaf,
-  PawPrint, ChefHat, ShoppingBag, Wind, Scissors, Baby, Car, PaintBucket,
-  Paintbrush, Wand2, Snowflake, Dog, Sofa, AppWindow, Camera, Dumbbell,
-  HeartHandshake, Music,
-} from 'lucide-react'
+import { CATEGORY_LABELS, CATEGORY_BY_KEY, toCategoryKey } from '@/lib/categories'
+import { categoryIconProps } from '@/lib/category-icon'
 
-const CATEGORIES: { key: string; bg: string; color: string; Icon: React.ElementType }[] = [
-  { key: 'Cleaning',           bg: '#F0FDF4', color: '#16A34A', Icon: SprayCan },
-  { key: 'Moving',             bg: '#EFF6FF', color: '#2563EB', Icon: Truck },
-  { key: 'Tutoring',           bg: '#FFFBEB', color: '#D97706', Icon: GraduationCap },
-  { key: 'Delivery',           bg: '#FFF7ED', color: '#EA580C', Icon: Package },
-  { key: 'Handyman',           bg: '#F5F3FF', color: '#7C3AED', Icon: Wrench },
-  { key: 'Events',             bg: '#FFF1F2', color: '#E11D48', Icon: PartyPopper },
-  { key: 'IT & Tech',          bg: '#F0F9FF', color: '#0284C7', Icon: Monitor },
-  { key: 'Gardening',          bg: '#F0FDF4', color: '#15803D', Icon: Leaf },
-  { key: 'Pet Care',           bg: '#FFF7ED', color: '#F97316', Icon: PawPrint },
-  { key: 'Cooking',            bg: '#FEF2F2', color: '#DC2626', Icon: ChefHat },
-  { key: 'Shopping',           bg: '#F5F3FF', color: '#8B5CF6', Icon: ShoppingBag },
-  { key: 'Knitting',           bg: '#FDF4FF', color: '#C026D3', Icon: Wind },
-  { key: 'Sewing',             bg: '#ECFEFF', color: '#0891B2', Icon: Scissors },
-  { key: 'Kids Care',          bg: '#FEFCE8', color: '#CA8A04', Icon: Baby },
-  { key: 'Car Wash',           bg: '#F0F9FF', color: '#0EA5E9', Icon: Car },
-  { key: 'Painting',           bg: '#EEF2FF', color: '#4F46E5', Icon: PaintBucket },
-  { key: 'Makeup Artist',      bg: '#FDF2F8', color: '#DB2777', Icon: Paintbrush },
-  { key: 'Hair Dresser',       bg: '#F3E8FF', color: '#7E22CE', Icon: Wand2 },
-  { key: 'Snow Removal',       bg: '#EFF6FF', color: '#0369A1', Icon: Snowflake },
-  { key: 'Dog Walking',        bg: '#FEF9C3', color: '#92400E', Icon: Dog },
-  { key: 'Furniture Assembly', bg: '#F5F3FF', color: '#6D28D9', Icon: Sofa },
-  { key: 'Window Cleaning',    bg: '#ECFEFF', color: '#0E7490', Icon: AppWindow },
-  { key: 'Photography',        bg: '#FFF1F2', color: '#BE123C', Icon: Camera },
-  { key: 'Personal Training',  bg: '#F0FDF4', color: '#166534', Icon: Dumbbell },
-  { key: 'Elder Care',         bg: '#FFF7ED', color: '#C2410C', Icon: HeartHandshake },
-  { key: 'Music Lessons',      bg: '#EEF2FF', color: '#4338CA', Icon: Music },
-]
+const CATEGORIES: { key: string; bg: string; color: string; Icon: React.ElementType }[] = CATEGORY_LABELS
+  .map((label) => {
+    const meta = CATEGORY_BY_KEY[toCategoryKey(label)]
+    if (!meta) return null
+    return { key: label, bg: meta.bg, color: meta.color, Icon: meta.Icon }
+  })
+  .filter((cat): cat is { key: string; bg: string; color: string; Icon: React.ElementType } => Boolean(cat))
+
+type ScopingQ = { id: string; label: string; options: string[] }
+const SCOPING_QUESTIONS: Record<string, ScopingQ[]> = {
+  'Cleaning': [
+    { id: 'size',     label: 'Property size',        options: ['Studio / 1 room', '2 rooms', '3 rooms', '4 rooms', '5+ rooms'] },
+    { id: 'type',     label: 'Type of clean',        options: ['Regular clean', 'Deep clean', 'Move-in/out clean', 'After-party clean'] },
+    { id: 'supplies', label: 'Cleaning supplies',    options: ['I have supplies', 'Helper should bring supplies'] },
+  ],
+  'Moving': [
+    { id: 'size',     label: 'Property size',        options: ['Studio / 1 room', '2 rooms', '3 rooms', '4+ rooms'] },
+    { id: 'distance', label: 'Moving distance',      options: ['Same building', 'Same neighbourhood', 'Same city', 'Different city'] },
+    { id: 'elevator', label: 'Elevator available?',  options: ['Yes – elevator', 'No – stairs only'] },
+    { id: 'packing',  label: 'Packing help needed?', options: ['Yes, help with packing', 'No, just transport'] },
+  ],
+  'Handyman': [
+    { id: 'jobType',  label: 'Type of job',          options: ['Repair', 'Installation', 'Assembly', 'Other'] },
+    { id: 'urgency',  label: 'How urgent?',           options: ['Today / ASAP', 'This week', 'Flexible timing'] },
+  ],
+  'Tutoring': [
+    { id: 'subject',  label: 'Subject',               options: ['Maths', 'Science', 'English', 'Norwegian', 'History', 'Other'] },
+    { id: 'level',    label: 'Student level',         options: ['Primary school', 'Secondary school', 'Videregående', 'University / Adult'] },
+  ],
+  'Gardening': [
+    { id: 'area',     label: 'Garden size',           options: ['Small (< 50m²)', 'Medium (50–200m²)', 'Large (200m²+)'] },
+    { id: 'task',     label: 'Main task',             options: ['Lawn mowing', 'Weeding', 'Planting', 'General tidy-up', 'Everything'] },
+  ],
+  'Furniture Assembly': [
+    { id: 'items',    label: 'Number of items',       options: ['1 item', '2–3 items', '4–6 items', '7+ items'] },
+    { id: 'brand',    label: 'Brand / type',          options: ['IKEA flat-pack', 'Other flat-pack', 'Bespoke furniture'] },
+  ],
+  'Painting': [
+    { id: 'scope',    label: 'What to paint',         options: ['Single wall', 'Full room', 'Multiple rooms', 'Exterior'] },
+    { id: 'prep',     label: 'Surface prep needed?',  options: ['Yes – sanding / filling', 'No – ready to paint'] },
+  ],
+  'Dog Walking': [
+    { id: 'dogs',     label: 'Number of dogs',        options: ['1 dog', '2 dogs', '3+ dogs'] },
+    { id: 'duration', label: 'Walk duration',         options: ['30 minutes', '1 hour', 'Over 1 hour'] },
+  ],
+  'IT & Tech': [
+    { id: 'task',     label: 'What do you need help with?', options: ['Computer / laptop', 'WiFi / network', 'Software / apps', 'TV / smart home', 'Phone / tablet', 'Other'] },
+  ],
+  'Personal Training': [
+    { id: 'where',    label: 'Where to train?',       options: ['At home', 'In a park / outdoors', 'At a gym (I provide access)'] },
+    { id: 'goal',     label: 'Main goal',             options: ['Weight loss', 'Strength & muscle', 'Fitness & endurance', 'Rehabilitation'] },
+  ],
+  'Snow Removal': [
+    { id: 'area',     label: 'Area to clear',         options: ['Driveway only', 'Walkway / entrance', 'Roof snow', 'Everything'] },
+    { id: 'urgency',  label: 'Urgency',               options: ['Today / ASAP', 'Within 24h', 'Flexible'] },
+  ],
+  'Window Cleaning': [
+    { id: 'count',    label: 'Number of windows',     options: ['1–5 windows', '6–15 windows', '16+ windows'] },
+    { id: 'floors',   label: 'Floor level',           options: ['Ground floor only', 'Up to 2nd floor', 'Higher floors (specialist needed)'] },
+  ],
+  'Kids Care': [
+    { id: 'kids',     label: 'Number of children',    options: ['1 child', '2 children', '3+ children'] },
+    { id: 'age',      label: 'Age of youngest child', options: ['Under 2 years', '2–5 years', '6–10 years', '11+ years'] },
+  ],
+  'Elder Care': [
+    { id: 'type',     label: 'Type of assistance',    options: ['Companionship / visits', 'Errands & shopping', 'Meal preparation', 'Personal care support', 'Transport'] },
+    { id: 'freq',     label: 'Frequency',             options: ['One-off visit', 'A few times per week', 'Daily'] },
+  ],
+}
 
 const NORWAY_LOCATIONS = [
   'Oslo – Sentrum', 'Oslo – Grünerløkka', 'Oslo – Grønland', 'Oslo – Tøyen',
@@ -129,6 +166,7 @@ export default function PostForm() {
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [scopingAnswers, setScopingAnswers] = useState<Record<string, string>>({})
   const [locSuggestions, setLocSuggestions] = useState<string[]>([])
   const [showLocSuggestions, setShowLocSuggestions] = useState(false)
   const locRef = useRef<HTMLDivElement>(null)
@@ -143,7 +181,7 @@ export default function PostForm() {
 
   useEffect(() => {
     if (step !== 3 || allHelpers.length > 0) return
-    setLoadingHelpers(true)
+    void Promise.resolve().then(() => setLoadingHelpers(true))
     const supabase = createClient()
     supabase
       .from('profiles')
@@ -198,12 +236,23 @@ export default function PostForm() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/login?next=/post'); return }
 
+    const scopingSummary = Object.entries(scopingAnswers)
+      .filter(([, v]) => v)
+      .map(([k, v]) => {
+        const q = SCOPING_QUESTIONS[category]?.find(q => q.id === k)
+        return q ? `${q.label}: ${v}` : null
+      })
+      .filter(Boolean)
+      .join(' · ')
+
+    const fullDescription = [scopingSummary, description.trim()].filter(Boolean).join('\n\n')
+
     const { data: post, error: postError } = await supabase
       .from('posts')
       .insert({
         user_id: user.id,
         title: title.trim(),
-        description: description.trim(),
+        description: fullDescription,
         category,
         price: budget ? Number(budget) : null,
         location: location.trim(),
@@ -245,7 +294,7 @@ export default function PostForm() {
                 onClick={() => { setCategory(cat.key); setStep(2) }}
                 className="flex flex-col items-center gap-3 rounded-2xl bg-white border-2 border-gray-100 px-3 py-5 hover:border-blue-400 hover:shadow-lg transition-all duration-200 text-center group">
                 <div className="h-14 w-14 rounded-2xl flex items-center justify-center shadow-sm" style={{ background: cat.bg }}>
-                  <cat.Icon size={26} color={cat.color} strokeWidth={1.75} />
+                  <cat.Icon {...categoryIconProps(26, cat.color)} />
                 </div>
                 <span className="text-xs font-bold text-gray-800 group-hover:text-blue-600 transition-colors leading-tight">{cat.key}</span>
               </button>
@@ -267,13 +316,40 @@ export default function PostForm() {
             <div className="lg:col-span-2 flex flex-col gap-5">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: cat.bg }}>
-                  <cat.Icon size={20} color={cat.color} strokeWidth={1.75} />
+                  <cat.Icon {...categoryIconProps(20, cat.color)} />
                 </div>
                 <div>
                   <h1 className="text-xl font-extrabold text-gray-900">{category}</h1>
                   <p className="text-xs text-gray-400">Tell us what you need done</p>
                 </div>
               </div>
+
+              {/* Scoping questions */}
+              {SCOPING_QUESTIONS[category] && (
+                <div className="rounded-2xl border border-blue-100 bg-blue-50/50 p-5 flex flex-col gap-5">
+                  <p className="text-xs font-bold text-blue-700 uppercase tracking-wider">Quick questions</p>
+                  {SCOPING_QUESTIONS[category].map(q => (
+                    <div key={q.id}>
+                      <p className="text-sm font-semibold text-gray-800 mb-2">{q.label}</p>
+                      <div className="flex flex-wrap gap-2">
+                        {q.options.map(opt => {
+                          const selected = scopingAnswers[q.id] === opt
+                          return (
+                            <button key={opt} type="button"
+                              onClick={() => setScopingAnswers(prev => ({ ...prev, [q.id]: selected ? '' : opt }))}
+                              className="rounded-full px-3 py-1.5 text-xs font-semibold border transition-all"
+                              style={selected
+                                ? { background: 'linear-gradient(135deg,#1E3A8A,#38BDF8)', color: '#fff', borderColor: 'transparent' }
+                                : { background: '#fff', color: '#374151', borderColor: '#D1D5DB' }}>
+                              {opt}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {/* Title */}
               <div>
@@ -371,7 +447,7 @@ export default function PostForm() {
                 <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4">Task summary</p>
                 <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-100">
                   <div className="h-9 w-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: cat.bg }}>
-                    <cat.Icon size={18} color={cat.color} strokeWidth={1.75} />
+                    <cat.Icon {...categoryIconProps(18, cat.color)} />
                   </div>
                   <span className="text-sm font-bold text-gray-900">{category}</span>
                 </div>
@@ -526,7 +602,7 @@ export default function PostForm() {
               {/* Category row */}
               <div className="flex items-center gap-4 p-5">
                 <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: cat4.bg }}>
-                  <cat4.Icon size={20} color={cat4.color} strokeWidth={1.75} />
+                  <cat4.Icon {...categoryIconProps(20, cat4.color)} />
                 </div>
                 <div className="flex-1">
                   <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Category</p>

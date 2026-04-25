@@ -10,6 +10,7 @@ export type Conversation = {
   lastMessage: string | null
   lastMessageAt: string | null
   unreadCount: number
+  status: string
 }
 
 export default async function ChatPage() {
@@ -21,8 +22,8 @@ export default async function ChatPage() {
 
   try {
     const [{ data: asHelper }, { data: asPoster }] = await Promise.all([
-      supabase.from('bookings').select('id, poster_id, helper_id').eq('helper_id', user.id).eq('status', 'accepted'),
-      supabase.from('bookings').select('id, poster_id, helper_id').eq('poster_id', user.id).eq('status', 'accepted'),
+      supabase.from('bookings').select('id, poster_id, helper_id, status').eq('helper_id', user.id).in('status', ['accepted', 'pending', 'completed']),
+      supabase.from('bookings').select('id, poster_id, helper_id, status').eq('poster_id', user.id).in('status', ['accepted', 'pending', 'completed']),
     ])
 
     const allBookings = [
@@ -63,6 +64,7 @@ export default async function ChatPage() {
           lastMessage: last?.body ?? null,
           lastMessageAt: last?.created_at ?? null,
           unreadCount: bMsgs.filter(m => m.sender_id !== user.id && !m.read_at).length,
+          status: b.status,
         }
       })
 

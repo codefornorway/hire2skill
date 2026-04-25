@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { useLanguage } from '@/context/LanguageContext'
 import { createClient } from '@/lib/supabase/client'
 import type { BookingItem, Post } from './page'
@@ -218,20 +218,166 @@ function ReviewModal({
   )
 }
 
+function PhotoUploadButton({ bookingId }: { bookingId: string }) {
+  const [uploading, setUploading] = useState(false)
+  const [photos, setPhotos] = useState<{ url: string; label: string }[]>([])
+  const [showPicker, setShowPicker] = useState(false)
+  const [type, setType] = useState<'before' | 'after'>('after')
+  const inputRef = React.useRef<HTMLInputElement>(null)
+
+  async function handleFile(file: File) {
+    if (!file) return
+    setUploading(true)
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { setUploading(false); return }
+    const path = `${user.id}/${bookingId}/${type}-${Date.now()}.${file.name.split('.').pop()}`
+    const { data, error } = await supabase.storage.from('task-photos').upload(path, file, { upsert: true })
+    if (!error && data) {
+      const { data: urlData } = supabase.storage.from('task-photos').getPublicUrl(data.path)
+      setPhotos(prev => [...prev, { url: urlData.publicUrl, label: type }])
+    }
+    setUploading(false)
+    setShowPicker(false)
+  }
+
+  return (
+    <div>
+      <input ref={inputRef} type="file" accept="image/*" className="hidden"
+        onChange={e => { if (e.target.files?.[0]) handleFile(e.target.files[0]) }} />
+
+      {photos.length > 0 && (
+        <div className="flex gap-2 flex-wrap mb-2">
+          {photos.map((p, i) => (
+            <div key={i} className="relative">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={p.url} alt={p.label} className="h-16 w-16 rounded-xl object-cover border border-gray-200" />
+              <span className="absolute bottom-0.5 left-0.5 rounded text-[9px] font-bold px-1 py-0.5 capitalize"
+                style={{ background: p.label === 'before' ? '#FFF7ED' : '#F0FDF4', color: p.label === 'before' ? '#EA580C' : '#16A34A' }}>
+                {p.label}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {showPicker ? (
+        <div className="flex gap-2">
+          {(['before', 'after'] as const).map(t => (
+            <button key={t} type="button"
+              onClick={() => { setType(t); inputRef.current?.click() }}
+              disabled={uploading}
+              className="flex-1 rounded-xl py-2 text-xs font-bold border capitalize transition-colors disabled:opacity-50"
+              style={type === t
+                ? { background: t === 'before' ? '#FFF7ED' : '#F0FDF4', borderColor: t === 'before' ? '#FED7AA' : '#BBF7D0', color: t === 'before' ? '#EA580C' : '#16A34A' }
+                : { background: '#F9FAFB', borderColor: '#E5E7EB', color: '#6B7280' }}>
+              {uploading && type === t ? 'Uploading…' : `+ ${t} photo`}
+            </button>
+          ))}
+          <button type="button" onClick={() => setShowPicker(false)}
+            className="rounded-xl px-3 py-2 text-xs text-gray-400 hover:text-gray-600 border border-gray-200">
+            ✕
+          </button>
+        </div>
+      ) : (
+        <button type="button" onClick={() => setShowPicker(true)}
+          className="w-full rounded-xl py-2 text-xs font-semibold border border-gray-200 text-gray-500 hover:border-blue-300 hover:text-blue-600 transition-colors flex items-center justify-center gap-1.5">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          Add before/after photos
+        </button>
+      )}
+    </div>
+  )
+}
+
+function RescheduleModal({
+  booking,
+  onClose,
+  onDone,
+}: {
+  booking: BookingItem
+  onClose: () => void
+  onDone: (bookingId: string, newDate: string) => void
+}) {
+  const [date, setDate] = useState(booking.scheduled_date?.split('T')[0] ?? '')
+  const [note, setNote] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  async function handleSave() {
+    if (!date) { setError('Please select a new date.'); return }
+    setSaving(true)
+    const supabase = createClient()
+    const { error: err } = await supabase
+      .from('bookings')
+      .update({ scheduled_date: date })
+      .eq('id', booking.id)
+    setSaving(false)
+    if (err) { setError(err.message); return }
+    onDone(booking.id, date)
+    onClose()
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.45)' }}>
+      <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-7">
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-lg font-extrabold text-gray-900">Reschedule booking</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <p className="text-sm text-gray-500 mb-5">
+          Rescheduling with <span className="font-semibold text-gray-800">{booking.other_display_name ?? 'helper'}</span>. They will be notified of the new date.
+        </p>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">New date <span className="text-red-500">*</span></label>
+            <input type="date" value={date} onChange={e => { setDate(e.target.value); setError('') }}
+              min={new Date().toISOString().split('T')[0]}
+              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition" />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Note <span className="text-gray-400 font-normal text-xs">(optional)</span></label>
+            <input type="text" value={note} onChange={e => setNote(e.target.value)}
+              placeholder="e.g. Morning works best for me"
+              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition" />
+          </div>
+          {error && <p className="text-xs text-red-500 bg-red-50 rounded-lg px-3 py-2">{error}</p>}
+          <div className="flex gap-3 pt-1">
+            <button type="button" onClick={onClose}
+              className="flex-1 rounded-xl py-3 text-sm font-bold border-2 border-gray-200 text-gray-600 hover:border-gray-300 transition-colors">
+              Cancel
+            </button>
+            <button type="button" onClick={handleSave} disabled={saving}
+              className="flex-1 rounded-xl py-3 text-sm font-bold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+              style={{ background: 'linear-gradient(90deg,#2563EB,#38BDF8)' }}>
+              {saving ? 'Saving…' : 'Confirm'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function BookingCard({
   booking,
   isHelper,
-  currentUserId,
   onUpdate,
   onReview,
+  onReschedule,
 }: {
   booking: BookingItem
   isHelper: boolean
-  currentUserId: string
   onUpdate: (id: string, status: string) => void
   onReview: (booking: BookingItem) => void
+  onReschedule: (booking: BookingItem) => void
 }) {
+  const { t } = useLanguage()
+  const d = t.dashboard
   const [updating, setUpdating] = useState(false)
+  const [notifyWarn, setNotifyWarn] = useState<string | null>(null)
   const meta = STATUS_META[booking.status] ?? STATUS_META.pending
 
   async function updateStatus(status: string) {
@@ -241,19 +387,30 @@ function BookingCard({
     setUpdating(false)
     onUpdate(booking.id, status)
     if (status === 'accepted') {
-      fetch('/api/notify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'booking-accepted',
-          bookingData: { id: booking.id, poster_id: booking.poster_id, helper_id: booking.helper_id },
-        }),
-      }).catch(() => {})
+      try {
+        const res = await fetch('/api/notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'booking-accepted',
+            bookingData: { id: booking.id, poster_id: booking.poster_id, helper_id: booking.helper_id },
+          }),
+        })
+        if (!res.ok) setNotifyWarn(d.notifyEmailWarn)
+        else setNotifyWarn(null)
+      } catch {
+        setNotifyWarn(d.notifyEmailWarn)
+      }
     }
   }
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-5 flex flex-col gap-3">
+      {notifyWarn && (
+        <p className="text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
+          {notifyWarn}
+        </p>
+      )}
       <div className="flex items-start gap-3">
         <Avatar name={booking.other_display_name} avatarUrl={booking.other_avatar_url} size={10} />
         <div className="flex-1 min-w-0">
@@ -313,32 +470,52 @@ function BookingCard({
         </button>
       )}
 
-      {/* Accepted: message + complete */}
+      {/* Accepted: message + reschedule + complete */}
       {booking.status === 'accepted' && (
-        <div className="flex gap-2 pt-1">
-          {!isHelper && (
-            <Link href="/chat"
-              className="flex-1 rounded-xl py-2 text-sm font-bold text-white text-center hover:opacity-90 transition-opacity"
-              style={{ background: 'linear-gradient(90deg,#2563EB,#38BDF8)' }}>
-              Message {booking.other_display_name?.split(' ')[0] ?? 'helper'}
-            </Link>
-          )}
-          <button onClick={() => updateStatus('completed')} disabled={updating}
-            className="flex-1 rounded-xl py-2 text-sm font-bold border-2 border-green-300 text-green-700 hover:bg-green-50 transition-colors disabled:opacity-50">
-            {updating ? 'Saving…' : '✓ Mark complete'}
+        <div className="flex flex-col gap-2 pt-1">
+          <div className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-2">
+            <p className="text-xs font-bold text-blue-900 mb-1">{d.bookingNextTitle}</p>
+            <ol className="text-[11px] text-blue-900/80 space-y-1 list-decimal list-inside">
+              <li>{d.bookingNext1}</li>
+              <li>{d.bookingNext2}</li>
+              <li>{d.bookingNext3}</li>
+            </ol>
+          </div>
+          <div className="flex gap-2">
+            {!isHelper && (
+              <Link href="/chat"
+                className="flex-1 rounded-xl py-2 text-sm font-bold text-white text-center hover:opacity-90 transition-opacity"
+                style={{ background: 'linear-gradient(90deg,#2563EB,#38BDF8)' }}>
+                Message {booking.other_display_name?.split(' ')[0] ?? 'helper'}
+              </Link>
+            )}
+            <button onClick={() => updateStatus('completed')} disabled={updating}
+              className="flex-1 rounded-xl py-2 text-sm font-bold border-2 border-green-300 text-green-700 hover:bg-green-50 transition-colors disabled:opacity-50">
+              {updating ? 'Saving…' : '✓ Mark complete'}
+            </button>
+          </div>
+          <button onClick={() => onReschedule(booking)}
+            className="w-full rounded-xl py-2 text-sm font-semibold border border-gray-200 text-gray-500 hover:border-blue-300 hover:text-blue-600 transition-colors flex items-center justify-center gap-1.5">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Reschedule
           </button>
         </div>
       )}
 
-      {/* Completed: leave a review */}
-      {booking.status === 'completed' && !booking.has_review && (
-        <button onClick={() => onReview(booking)}
-          className="w-full rounded-xl py-2 text-sm font-bold border-2 border-amber-200 text-amber-700 hover:bg-amber-50 transition-colors">
-          ★ Leave a review
-        </button>
-      )}
-      {booking.status === 'completed' && booking.has_review && (
-        <p className="text-center text-xs text-gray-400 py-1">✓ Review submitted</p>
+      {/* Completed: photos + review */}
+      {booking.status === 'completed' && (
+        <div className="flex flex-col gap-2">
+          {!booking.has_review && (
+            <button onClick={() => onReview(booking)}
+              className="w-full rounded-xl py-2 text-sm font-bold border-2 border-amber-200 text-amber-700 hover:bg-amber-50 transition-colors">
+              ★ Leave a review
+            </button>
+          )}
+          {booking.has_review && (
+            <p className="text-center text-xs text-gray-400 py-1">✓ Review submitted</p>
+          )}
+          <PhotoUploadButton bookingId={booking.id} />
+        </div>
       )}
     </div>
   )
@@ -378,6 +555,7 @@ export default function DashboardContent({ email, postCount, recentPosts, posted
   const [bookings, setBookings] = useState<BookingItem[]>(initialBookings)
   const [activeFilter, setActiveFilter] = useState<FilterOption>('all')
   const [reviewTarget, setReviewTarget] = useState<BookingItem | null>(null)
+  const [rescheduleTarget, setRescheduleTarget] = useState<BookingItem | null>(null)
 
   function handleTabChange(tab: 'overview' | 'tasks') {
     setActiveTab(tab)
@@ -390,6 +568,10 @@ export default function DashboardContent({ email, postCount, recentPosts, posted
 
   function handleReviewDone(bookingId: string) {
     setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, has_review: true } : b))
+  }
+
+  function handleRescheduleDone(bookingId: string, newDate: string) {
+    setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, scheduled_date: newDate } : b))
   }
 
   const pendingCount = bookings.filter(b => b.status === 'pending').length
@@ -409,6 +591,13 @@ export default function DashboardContent({ email, postCount, recentPosts, posted
           isHelper={isHelper}
           onClose={() => setReviewTarget(null)}
           onDone={handleReviewDone}
+        />
+      )}
+      {rescheduleTarget && (
+        <RescheduleModal
+          booking={rescheduleTarget}
+          onClose={() => setRescheduleTarget(null)}
+          onDone={handleRescheduleDone}
         />
       )}
       {posted && (
@@ -497,6 +686,15 @@ export default function DashboardContent({ email, postCount, recentPosts, posted
                   <p className="text-xs text-gray-400">{t.dashboard.profileSub}</p>
                 </div>
               </Link>
+              <Link href="/referral" className="flex items-center gap-4 rounded-xl bg-white border border-amber-200 p-5 hover:border-amber-400 hover:bg-amber-50 transition-colors">
+                <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#FFFBEB' }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-6"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
+                </div>
+                <div>
+                  <p className="font-semibold text-sm text-gray-900">Invite friends</p>
+                  <p className="text-xs text-amber-600 font-medium">Earn 100 NOK per referral</p>
+                </div>
+              </Link>
             </div>
           </div>
 
@@ -554,7 +752,7 @@ export default function DashboardContent({ email, postCount, recentPosts, posted
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {filteredBookings.map(b => (
-                    <BookingCard key={b.id} booking={b} isHelper={true} currentUserId={currentUserId} onUpdate={handleBookingUpdate} onReview={setReviewTarget} />
+                    <BookingCard key={b.id} booking={b} isHelper={true} onUpdate={handleBookingUpdate} onReview={setReviewTarget} onReschedule={setRescheduleTarget} />
                   ))}
                 </div>
               )}
@@ -653,7 +851,7 @@ export default function DashboardContent({ email, postCount, recentPosts, posted
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {filteredBookings.map(b => (
-                      <BookingCard key={b.id} booking={b} isHelper={false} currentUserId={currentUserId} onUpdate={handleBookingUpdate} onReview={setReviewTarget} />
+                      <BookingCard key={b.id} booking={b} isHelper={false} onUpdate={handleBookingUpdate} onReview={setReviewTarget} onReschedule={setRescheduleTarget} />
                     ))}
                   </div>
                 )}

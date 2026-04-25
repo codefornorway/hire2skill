@@ -16,6 +16,12 @@ export default async function sitemap() {
     { url: BASE, priority: 1.0, changeFrequency: 'daily' as const },
     { url: `${BASE}/taskers`, priority: 0.9, changeFrequency: 'daily' as const },
     { url: `${BASE}/services`, priority: 0.9, changeFrequency: 'weekly' as const },
+    { url: `${BASE}/about`, priority: 0.5, changeFrequency: 'monthly' as const },
+    { url: `${BASE}/contact`, priority: 0.5, changeFrequency: 'monthly' as const },
+    { url: `${BASE}/personvern`, priority: 0.35, changeFrequency: 'yearly' as const },
+    { url: `${BASE}/vilkar`, priority: 0.35, changeFrequency: 'yearly' as const },
+    { url: `${BASE}/privacy`, priority: 0.3, changeFrequency: 'yearly' as const },
+    { url: `${BASE}/terms`, priority: 0.3, changeFrequency: 'yearly' as const },
     { url: `${BASE}/signup`, priority: 0.6, changeFrequency: 'monthly' as const },
     { url: `${BASE}/login`, priority: 0.4, changeFrequency: 'monthly' as const },
   ]

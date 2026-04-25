@@ -44,6 +44,8 @@ export default function ChatThread({
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages)
   const [body, setBody] = useState('')
   const [sending, setSending] = useState(false)
+  const [sendError, setSendError] = useState<string | null>(null)
+  const [pendingRetry, setPendingRetry] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const supabase = useMemo(() => createClient(), [])
 
@@ -72,12 +74,10 @@ export default function ChatThread({
     return () => { supabase.removeChannel(channel) }
   }, [bookingId, currentUserId, supabase])
 
-  async function handleSend(e: React.FormEvent) {
-    e.preventDefault()
-    const text = body.trim()
-    if (!text || sending) return
+  async function sendMessage(text: string) {
+    if (!text.trim() || sending) return
     setSending(true)
-    setBody('')
+    setSendError(null)
 
     const optimisticId = `opt-${Date.now()}`
     const optimistic: ChatMessage = {
@@ -89,15 +89,25 @@ export default function ChatThread({
     }
     setMessages(prev => [...prev, optimistic])
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('messages')
       .insert({ booking_id: bookingId, sender_id: currentUserId, body: text })
       .select('id, created_at, sender_id, body, read_at')
       .single()
 
-    if (data) {
-      setMessages(prev => prev.map(m => m.id === optimisticId ? (data as ChatMessage) : m))
-      fetch('/api/notify', {
+    if (error || !data) {
+      setMessages(prev => prev.filter(m => m.id !== optimisticId))
+      setSendError(error?.message ?? 'Could not send message. Check your connection and try again.')
+      setPendingRetry(text)
+      setSending(false)
+      return
+    }
+
+    setMessages(prev => prev.map(m => m.id === optimisticId ? (data as ChatMessage) : m))
+    setPendingRetry(null)
+
+    try {
+      const res = await fetch('/api/notify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -106,9 +116,23 @@ export default function ChatThread({
           bookingId,
           preview: text,
         }),
-      }).catch(() => {})
+      })
+      if (!res.ok) {
+        setSendError('Message delivered, but email/push notification may be delayed.')
+      }
+    } catch {
+      setSendError('Message delivered, but email/push notification may be delayed.')
     }
+
     setSending(false)
+  }
+
+  async function handleSend(e: React.FormEvent) {
+    e.preventDefault()
+    const text = body.trim()
+    if (!text || sending) return
+    setBody('')
+    await sendMessage(text)
   }
 
   // Group messages by date for separator rendering
@@ -186,7 +210,22 @@ export default function ChatThread({
 
       {/* Input */}
       <form onSubmit={handleSend}
-        className="flex items-center gap-3 border-t border-gray-200 bg-white px-6 py-4 shrink-0">
+        className="flex flex-col gap-2 border-t border-gray-200 bg-white px-6 py-4 shrink-0">
+        {sendError && (
+          <div className="flex items-start justify-between gap-3 rounded-xl border border-amber-100 bg-amber-50 px-3 py-2">
+            <p className="text-xs text-amber-900">{sendError}</p>
+            {pendingRetry && (
+              <button
+                type="button"
+                onClick={() => { void sendMessage(pendingRetry) }}
+                disabled={sending}
+                className="shrink-0 text-xs font-bold text-amber-900 underline disabled:opacity-40">
+                Retry
+              </button>
+            )}
+          </div>
+        )}
+        <div className="flex items-center gap-3">
         <input
           value={body}
           onChange={e => setBody(e.target.value)}
@@ -205,6 +244,7 @@ export default function ChatThread({
             <polygon points="22 2 15 22 11 13 2 9 22 2"/>
           </svg>
         </button>
+        </div>
       </form>
     </div>
   )

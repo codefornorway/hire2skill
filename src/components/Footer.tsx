@@ -31,9 +31,10 @@ export default function Footer() {
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">Legal</p>
             <ul className="flex flex-col gap-2">
-              <li><Link href="/privacy" className="text-sm text-gray-500 hover:text-blue-600 transition-colors">Privacy Policy</Link></li>
-              <li><Link href="/terms" className="text-sm text-gray-500 hover:text-blue-600 transition-colors">Terms of Service</Link></li>
-              <li><Link href="/cookies" className="text-sm text-gray-500 hover:text-blue-600 transition-colors">Cookie Policy</Link></li>
+              <li><Link href="/personvern" className="text-sm text-gray-500 hover:text-blue-600 transition-colors">Personvern</Link></li>
+              <li><Link href="/vilkar" className="text-sm text-gray-500 hover:text-blue-600 transition-colors">Vilkår</Link></li>
+              <li><Link href="/privacy" className="text-sm text-gray-500 hover:text-blue-600 transition-colors">Privacy (EN)</Link></li>
+              <li><Link href="/terms" className="text-sm text-gray-500 hover:text-blue-600 transition-colors">Terms (EN)</Link></li>
             </ul>
           </div>
         </div>

@@ -5,6 +5,7 @@ import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import MobileBottomNav from '@/components/MobileBottomNav'
 import PWARegister from '@/components/PWARegister'
+import ThemeProvider from '@/components/ThemeProvider'
 import { LanguageProvider } from '@/context/LanguageContext'
 
 const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] })
@@ -37,7 +38,7 @@ export const metadata: Metadata = {
   openGraph: {
     siteName: 'SkillLink',
     type: 'website',
-    locale: 'en_NO',
+    locale: 'nb_NO',
     images: [{ url: '/og-default.png', width: 1200, height: 630, alt: 'SkillLink — Local helpers in Norway' }],
   },
   twitter: {
@@ -49,21 +50,32 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+    <html lang="nb" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <head>
         <link rel="apple-touch-icon" href="/icons/icon-512.svg" />
+        {/* No-flash: apply saved theme before first paint */}
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function(){
+            try {
+              var t = localStorage.getItem('sl-theme');
+              var p = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+              if ((t || p) === 'dark') document.documentElement.classList.add('dark');
+            } catch(e){}
+          })();
+        `}} />
       </head>
       <body className="min-h-full flex flex-col">
-        <LanguageProvider>
-          <Navbar />
-          {/* pb-16 on mobile reserves space for the fixed bottom nav */}
-          <div className="flex-1 flex flex-col pb-16 sm:pb-0">
-            {children}
-            <Footer />
-          </div>
-          <MobileBottomNav />
-          <PWARegister />
-        </LanguageProvider>
+        <ThemeProvider>
+          <LanguageProvider>
+            <Navbar />
+            <div className="flex-1 flex flex-col pb-16 sm:pb-0">
+              {children}
+              <Footer />
+            </div>
+            <MobileBottomNav />
+            <PWARegister />
+          </LanguageProvider>
+        </ThemeProvider>
       </body>
     </html>
   )

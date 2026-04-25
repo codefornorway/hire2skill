@@ -42,7 +42,7 @@ export default function ChatContent({ conversations }: { conversations: Conversa
             </svg>
           </div>
           <p className="text-sm font-semibold text-gray-700 mb-1">No conversations yet</p>
-          <p className="text-sm text-gray-400">Conversations open once a booking request is accepted.</p>
+          <p className="text-sm text-gray-400">Send a booking request to a helper to start a conversation.</p>
         </div>
       ) : (
         <div className="flex flex-col gap-1">
@@ -59,13 +59,24 @@ export default function ChatContent({ conversations }: { conversations: Conversa
               </div>
 
               <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2">
                   <p className={`text-sm truncate ${conv.unreadCount > 0 ? 'font-bold text-gray-900' : 'font-semibold text-gray-800'}`}>
                     {conv.otherName ?? 'Unknown user'}
                   </p>
-                  {conv.lastMessageAt && (
-                    <span className="text-xs text-gray-400 ml-2 shrink-0">{timeAgo(conv.lastMessageAt)}</span>
-                  )}
+                  <div className="flex items-center gap-2 shrink-0">
+                    {conv.status === 'pending' && (
+                      <span className="rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-700">Pending</span>
+                    )}
+                    {conv.status === 'accepted' && (
+                      <span className="rounded-full bg-green-50 border border-green-200 px-2 py-0.5 text-[10px] font-bold text-green-700">Active</span>
+                    )}
+                    {conv.status === 'completed' && (
+                      <span className="rounded-full bg-gray-100 border border-gray-200 px-2 py-0.5 text-[10px] font-bold text-gray-500">Done</span>
+                    )}
+                    {conv.lastMessageAt && (
+                      <span className="text-xs text-gray-400">{timeAgo(conv.lastMessageAt)}</span>
+                    )}
+                  </div>
                 </div>
                 <p className={`text-xs mt-0.5 truncate ${conv.unreadCount > 0 ? 'text-gray-700 font-medium' : 'text-gray-400'}`}>
                   {conv.lastMessage ?? 'No messages yet — say hello!'}

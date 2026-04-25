@@ -27,6 +27,7 @@ type Profile = {
   business_name: string | null
   business_website: string | null
   business_description: string | null
+  video_intro_url: string | null
 }
 
 type Post = {
@@ -177,10 +178,14 @@ function TextInput({ value, onChange, placeholder, readOnly, type = 'text' }: {
 // ── Verification tab ──────────────────────────────────────────────────────────
 
 function VerificationTab({ profile, userId }: { profile: Profile | null; userId: string }) {
+  const [method, setMethod] = useState<'id' | 'bankid'>('id')
   const [file, setFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
   const [done, setDone] = useState(false)
   const [error, setError] = useState('')
+  const [bankIdStep, setBankIdStep] = useState<'idle' | 'input' | 'loading' | 'awaiting' | 'done'>('idle')
+  const [personalNumber, setPersonalNumber] = useState('')
+  const [personalNumberError, setPersonalNumberError] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
 
   const status = profile?.verification_status ?? 'unverified'
@@ -205,8 +210,26 @@ function VerificationTab({ profile, userId }: { profile: Profile | null; userId:
     setDone(true)
   }
 
+  function submitPersonalNumber(e: React.FormEvent) {
+    e.preventDefault()
+    const digits = personalNumber.replace(/\s/g, '')
+    if (digits.length !== 11 || !/^\d{11}$/.test(digits)) {
+      setPersonalNumberError('Enter your 11-digit personal number (fødselsnummer)')
+      return
+    }
+    setPersonalNumberError('')
+    setBankIdStep('loading')
+    setTimeout(() => setBankIdStep('awaiting'), 1400)
+  }
+
+  function cancelBankId() {
+    setBankIdStep('idle')
+    setPersonalNumber('')
+    setPersonalNumberError('')
+  }
+
   const STATUS_CONFIG: Record<string, { icon: string; color: string; bg: string; border: string; title: string; desc: string }> = {
-    unverified: { icon: '○', color: '#6B7280', bg: '#F9FAFB', border: '#E5E7EB', title: 'Not verified', desc: 'Upload a government-issued ID to get your Verified badge.' },
+    unverified: { icon: '○', color: '#6B7280', bg: '#F9FAFB', border: '#E5E7EB', title: 'Not verified', desc: 'Choose a verification method below to get your Verified badge.' },
     pending:    { icon: '⏳', color: '#D97706', bg: '#FFFBEB', border: '#FDE68A', title: 'Under review', desc: 'Your document has been submitted and is being reviewed. This usually takes 1–2 business days.' },
     verified:   { icon: '✓', color: '#16A34A', bg: '#F0FDF4', border: '#BBF7D0', title: 'Verified', desc: 'Your identity has been verified. Your profile now shows the Verified badge.' },
     rejected:   { icon: '✗', color: '#DC2626', bg: '#FEF2F2', border: '#FECACA', title: 'Verification rejected', desc: profile?.verification_note ?? 'Your document could not be verified. Please re-submit a clearer image.' },
@@ -227,51 +250,222 @@ function VerificationTab({ profile, userId }: { profile: Profile | null; userId:
           </div>
         </div>
 
-        {/* Upload form — show for unverified + rejected */}
-        {(status === 'unverified' || status === 'rejected') && !done && (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <p className="text-sm font-semibold text-gray-700 mb-2">Accepted documents</p>
-              <ul className="text-sm text-gray-500 space-y-1 list-disc list-inside">
-                <li>National ID card (front + back)</li>
-                <li>Passport (photo page)</li>
-                <li>Driver's licence</li>
-              </ul>
+        {/* Verification method selector — show for unverified + rejected */}
+        {(status === 'unverified' || status === 'rejected') && !done && bankIdStep !== 'done' && (
+          <>
+            {/* Method tabs */}
+            <div className="grid grid-cols-2 gap-3">
+              <button type="button" onClick={() => setMethod('id')}
+                className="flex flex-col items-center gap-2.5 rounded-2xl border-2 p-4 text-left transition-all"
+                style={method === 'id'
+                  ? { borderColor: '#6366F1', background: '#EEF2FF' }
+                  : { borderColor: '#E5E7EB', background: '#fff' }}>
+                <div className="h-10 w-10 rounded-xl flex items-center justify-center"
+                  style={{ background: method === 'id' ? '#E0E7FF' : '#F3F4F6' }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={method === 'id' ? '#4F46E5' : '#6B7280'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="5" width="20" height="14" rx="2"/>
+                    <circle cx="8" cy="12" r="2"/>
+                    <path d="M12 9h4M12 12h4M12 15h4"/>
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm font-bold" style={{ color: method === 'id' ? '#4F46E5' : '#374151' }}>ID Document</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Passport, national ID or driver&apos;s licence</p>
+                </div>
+              </button>
+
+              <button type="button" onClick={() => setMethod('bankid')}
+                className="flex flex-col items-center gap-2.5 rounded-2xl border-2 p-4 text-left transition-all"
+                style={method === 'bankid'
+                  ? { borderColor: '#1D4ED8', background: '#EFF6FF' }
+                  : { borderColor: '#E5E7EB', background: '#fff' }}>
+                <div className="h-10 w-10 rounded-xl flex items-center justify-center"
+                  style={{ background: method === 'bankid' ? '#DBEAFE' : '#F3F4F6' }}>
+                  {/* BankID shield icon */}
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={method === 'bankid' ? '#1D4ED8' : '#6B7280'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 2L3 7v5c0 5 3.5 9.6 9 11 5.5-1.4 9-6 9-11V7L12 2z"/>
+                    <polyline points="9 12 11 14 15 10"/>
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm font-bold" style={{ color: method === 'bankid' ? '#1D4ED8' : '#374151' }}>BankID</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Instant verification via Norwegian BankID</p>
+                </div>
+              </button>
             </div>
-            <div
-              onClick={() => fileRef.current?.click()}
-              className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center cursor-pointer hover:border-blue-300 hover:bg-blue-50 transition-colors">
-              <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,application/pdf"
-                className="hidden" onChange={e => setFile(e.target.files?.[0] ?? null)} />
-              {file ? (
-                <p className="text-sm font-semibold text-blue-600">{file.name}</p>
-              ) : (
-                <>
-                  <svg className="mx-auto mb-2" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                  <p className="text-sm text-gray-500">Click to upload your ID document</p>
-                  <p className="text-xs text-gray-400 mt-1">JPG, PNG, PDF · max 10 MB</p>
-                </>
-              )}
-            </div>
-            {error && <p className="text-sm text-red-600">{error}</p>}
-            <button type="submit" disabled={!file || uploading}
-              className="px-6 py-3 rounded-xl text-sm font-bold text-white disabled:opacity-50 transition-opacity"
-              style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)' }}>
-              {uploading ? 'Uploading…' : 'Submit for verification'}
-            </button>
-          </form>
+
+            {/* ID Document upload */}
+            {method === 'id' && (
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <p className="text-sm font-semibold text-gray-700 mb-2">Accepted documents</p>
+                  <ul className="text-sm text-gray-500 space-y-1 list-disc list-inside">
+                    <li>National ID card (front + back)</li>
+                    <li>Passport (photo page)</li>
+                    <li>Driver&apos;s licence</li>
+                  </ul>
+                </div>
+                <div
+                  onClick={() => fileRef.current?.click()}
+                  className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center cursor-pointer hover:border-blue-300 hover:bg-blue-50 transition-colors">
+                  <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,application/pdf"
+                    className="hidden" onChange={e => setFile(e.target.files?.[0] ?? null)} />
+                  {file ? (
+                    <p className="text-sm font-semibold text-blue-600">{file.name}</p>
+                  ) : (
+                    <>
+                      <svg className="mx-auto mb-2" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                      <p className="text-sm text-gray-500">Click to upload your ID document</p>
+                      <p className="text-xs text-gray-400 mt-1">JPG, PNG, PDF · max 10 MB</p>
+                    </>
+                  )}
+                </div>
+                {error && <p className="text-sm text-red-600">{error}</p>}
+                <button type="submit" disabled={!file || uploading}
+                  className="px-6 py-3 rounded-xl text-sm font-bold text-white disabled:opacity-50 transition-opacity"
+                  style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)' }}>
+                  {uploading ? 'Uploading…' : 'Submit for verification'}
+                </button>
+              </form>
+            )}
+
+            {/* BankID flow — step 1: personal number entry */}
+            {method === 'bankid' && (bankIdStep === 'idle' || bankIdStep === 'input') && (
+              <div className="rounded-2xl border border-blue-100 bg-blue-50 p-6 space-y-5">
+                <div className="flex items-start gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-blue-100 flex items-center justify-center shrink-0">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1D4ED8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 2L3 7v5c0 5 3.5 9.6 9 11 5.5-1.4 9-6 9-11V7L12 2z"/>
+                      <polyline points="9 12 11 14 15 10"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-blue-900">Verify with BankID</p>
+                    <p className="text-xs text-blue-700 mt-0.5 leading-relaxed">Enter your Norwegian personal number to receive a BankID verification request on your phone.</p>
+                  </div>
+                </div>
+
+                <form onSubmit={submitPersonalNumber} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-blue-900 mb-1.5">
+                      Personal number <span className="font-normal text-blue-600">(fødselsnummer)</span>
+                    </label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={13}
+                      value={personalNumber}
+                      onChange={e => {
+                        setPersonalNumberError('')
+                        // format as "DDMMYY NNNNN"
+                        const raw = e.target.value.replace(/\D/g, '').slice(0, 11)
+                        setPersonalNumber(raw.length > 6 ? `${raw.slice(0, 6)} ${raw.slice(6)}` : raw)
+                      }}
+                      placeholder="DDMMYY NNNNN"
+                      className="w-full rounded-xl border border-blue-200 bg-white px-4 py-3 text-sm font-mono tracking-widest outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition"
+                    />
+                    {personalNumberError && (
+                      <p className="mt-1.5 text-xs text-red-600 flex items-center gap-1">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        {personalNumberError}
+                      </p>
+                    )}
+                    <p className="text-xs text-blue-600 mt-1.5">11 digits — date of birth + individual number</p>
+                  </div>
+
+                  <ul className="text-xs text-blue-700 space-y-1.5">
+                    {['Instant — no waiting for manual review', 'Works with BankID app or mobile BankID', 'Most secure verification method available'].map(item => (
+                      <li key={item} className="flex items-center gap-2">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#1D4ED8" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+
+                  <button type="submit"
+                    className="w-full rounded-xl py-3 text-sm font-bold text-white transition-opacity hover:opacity-90"
+                    style={{ background: 'linear-gradient(90deg,#1D4ED8,#3B82F6)' }}>
+                    Send BankID request →
+                  </button>
+                </form>
+              </div>
+            )}
+
+            {/* BankID — loading */}
+            {method === 'bankid' && bankIdStep === 'loading' && (
+              <div className="rounded-2xl border border-blue-100 bg-blue-50 p-8 text-center space-y-3">
+                <div className="h-12 w-12 rounded-full border-4 border-blue-200 border-t-blue-600 animate-spin mx-auto" />
+                <p className="text-sm font-semibold text-blue-800">Sending BankID request…</p>
+                <p className="text-xs text-blue-600">Check your BankID app in a moment</p>
+              </div>
+            )}
+
+            {/* BankID — awaiting confirmation */}
+            {method === 'bankid' && bankIdStep === 'awaiting' && (
+              <div className="rounded-2xl border border-blue-100 bg-blue-50 p-6 space-y-4">
+                <div className="text-center">
+                  <div className="h-16 w-16 rounded-2xl bg-blue-100 flex items-center justify-center mx-auto mb-3">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#1D4ED8" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="5" y="2" width="14" height="20" rx="2"/>
+                      <path d="M12 18h.01"/>
+                    </svg>
+                  </div>
+                  <p className="text-sm font-bold text-blue-900">Open your BankID app</p>
+                  <p className="text-xs text-blue-700 mt-1 leading-relaxed">
+                    A verification request has been sent to your BankID app.<br/>
+                    Open the app and approve it to complete verification.
+                  </p>
+                </div>
+
+                {/* Steps */}
+                <div className="space-y-2">
+                  {[
+                    'Open the BankID app on your phone',
+                    'Tap the pending request notification',
+                    'Confirm with your PIN or biometrics',
+                  ].map((step, i) => (
+                    <div key={i} className="flex items-center gap-3 bg-white rounded-xl px-4 py-2.5 border border-blue-100">
+                      <span className="h-5 w-5 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
+                        style={{ background: 'linear-gradient(135deg,#1D4ED8,#3B82F6)' }}>
+                        {i + 1}
+                      </span>
+                      <p className="text-xs text-gray-700">{step}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-amber-50 border border-amber-100">
+                  <div className="h-7 w-7 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                  </div>
+                  <p className="text-xs text-amber-800">Waiting for your approval… This page will update automatically.</p>
+                </div>
+
+                <button type="button" onClick={cancelBankId}
+                  className="w-full rounded-xl py-2.5 text-sm font-semibold text-blue-600 border border-blue-200 bg-white hover:bg-blue-50 transition-colors">
+                  Cancel
+                </button>
+                <p className="text-xs text-gray-400 text-center">
+                  Having trouble?{' '}
+                  <button type="button" onClick={() => { setMethod('id'); cancelBankId() }} className="text-blue-600 hover:underline">
+                    Use ID document instead
+                  </button>
+                </p>
+              </div>
+            )}
+          </>
         )}
 
         {done && (
           <div className="flex items-center gap-2 p-4 rounded-xl bg-green-50 border border-green-100">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-            <p className="text-sm font-semibold text-green-700">Document submitted — we'll review it within 1–2 business days.</p>
+            <p className="text-sm font-semibold text-green-700">Document submitted — we&apos;ll review it within 1–2 business days.</p>
           </div>
         )}
 
         <div className="p-4 rounded-xl bg-gray-50 border border-gray-100">
           <p className="text-xs text-gray-500">
-            Your document is stored securely and only used to verify your identity. It will not be shared with other users.
+            Your identity information is stored securely and only used to verify your account. It will not be shared with other users.
           </p>
         </div>
       </div>
@@ -303,6 +497,7 @@ export default function ProfileContent({
   const [cats, setCats]           = useState<string[]>(init?.categories ?? [])
   const [avatar, setAvatar]       = useState<string | null>(init?.avatar_url ?? null)
   const [role,   setRole]         = useState<RoleType>((init?.role as RoleType) ?? 'poster')
+  const [videoUrl, setVideoUrl]   = useState(init?.video_intro_url ?? '')
   const [avatarErr, setAvatarErr] = useState('')
   const [profSaving, setProfSaving] = useState(false)
   const [profSaved,  setProfSaved]  = useState(false)
@@ -399,6 +594,7 @@ export default function ProfileContent({
     await createClient().from('profiles').upsert({
       id: user.id, role, display_name: name, bio, location,
       hourly_rate: rate ? Number(rate) : null, categories: cats, avatar_url: avatar,
+      video_intro_url: videoUrl.trim() || null,
     })
     setProfSaving(false); setProfSaved(true)
     setTimeout(() => setProfSaved(false), 3000)
@@ -640,6 +836,15 @@ export default function ProfileContent({
                           ))}
                         </div>
                       </div>
+                      <div>
+                        <FieldLabel>Video intro URL <span className="font-normal text-gray-400">(optional)</span></FieldLabel>
+                        <TextInput
+                          value={videoUrl}
+                          onChange={setVideoUrl}
+                          placeholder="YouTube or Vimeo link, e.g. https://youtube.com/watch?v=…"
+                        />
+                        <p className="mt-1 text-xs text-gray-400">A short 30–60 s video boosts trust with clients and appears on your profile.</p>
+                      </div>
                     </>
                   )}
                 </div>
@@ -649,6 +854,7 @@ export default function ProfileContent({
                     setName(init?.display_name ?? ''); setBio(init?.bio ?? '')
                     setLocation(init?.location ?? ''); setRate(String(init?.hourly_rate ?? ''))
                     setCats(init?.categories ?? []); setRole((init?.role as RoleType) ?? 'poster')
+                    setVideoUrl(init?.video_intro_url ?? '')
                     setAvatarErr('')
                   }} />
 

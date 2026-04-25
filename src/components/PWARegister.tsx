@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { PUBLIC_ENV } from '@/lib/env/public'
 
-const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!
+const VAPID_PUBLIC_KEY = PUBLIC_ENV.NEXT_PUBLIC_VAPID_PUBLIC_KEY
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
@@ -12,6 +13,9 @@ function urlBase64ToUint8Array(base64String: string) {
 }
 
 async function subscribeToPush(registration: ServiceWorkerRegistration) {
+  if (!VAPID_PUBLIC_KEY) {
+    throw new Error('Missing NEXT_PUBLIC_VAPID_PUBLIC_KEY')
+  }
   const existing = await registration.pushManager.getSubscription()
   if (existing) return existing
   return registration.pushManager.subscribe({

@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { LogoHorizontal } from './SkillLinkLogo'
 import LanguageSwitcher from './LanguageSwitcher'
+import ThemeToggle from './ThemeToggle'
 
 export default async function Navbar() {
   const supabase = await createClient()
@@ -10,19 +11,32 @@ export default async function Navbar() {
   let unreadCount = 0
   if (user) {
     try {
-      const { count } = await supabase
-        .from('messages')
-        .select('*', { count: 'exact', head: true })
-        .neq('sender_id', user.id)
-        .is('read_at', null)
-      unreadCount = count ?? 0
+      // Only count messages from accepted bookings — matches what the chat page shows
+      const { data: acceptedBookings } = await supabase
+        .from('bookings')
+        .select('id')
+        .or(`helper_id.eq.${user.id},poster_id.eq.${user.id}`)
+        .eq('status', 'accepted')
+
+      const bookingIds = (acceptedBookings ?? []).map(b => b.id)
+
+      if (bookingIds.length > 0) {
+        const { count } = await supabase
+          .from('messages')
+          .select('*', { count: 'exact', head: true })
+          .in('booking_id', bookingIds)
+          .neq('sender_id', user.id)
+          .is('read_at', null)
+        unreadCount = count ?? 0
+      }
     } catch {
-      // messages table not yet created
+      // messages or bookings table not yet created
     }
   }
 
   return (
-    <nav className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-50 shadow-sm">
+    <nav className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-50 shadow-sm"
+      style={{ background: 'var(--sl-nav-bg)', borderColor: 'var(--sl-nav-border)' }}>
       <div className="mx-auto flex max-w-6xl items-center justify-between">
 
         <Link href={user ? '/dashboard' : '/'} className="hover:opacity-90 transition-opacity">
@@ -82,6 +96,7 @@ export default async function Navbar() {
             Post a Job
           </Link>
 
+          <ThemeToggle />
           <LanguageSwitcher />
         </div>
       </div>

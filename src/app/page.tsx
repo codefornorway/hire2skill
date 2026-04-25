@@ -35,11 +35,9 @@ export default async function Home() {
   const supabase = await createClient()
 
   const [
-    { count: jobCount },
     { data: recentPosts },
     { data: helperProfiles },
   ] = await Promise.all([
-    supabase.from('posts').select('*', { count: 'exact', head: true }),
     supabase.from('posts')
       .select('id, title, category, location, price, created_at')
       .order('created_at', { ascending: false })
@@ -57,8 +55,6 @@ export default async function Home() {
   const jobs = recentPosts && recentPosts.length >= 3
     ? recentPosts.map(p => ({ ...p, urgent: false }))
     : SAMPLE_JOBS
-
-  const totalJobs = jobCount && jobCount > 10 ? jobCount : 1200
 
   const helpers: RealHelper[] | null =
     helperProfiles && helperProfiles.length >= 1
@@ -84,7 +80,7 @@ export default async function Home() {
   return (
     <>
       <JsonLd data={orgSchema} />
-      <HomeContent jobs={jobs} totalJobs={totalJobs} helpers={helpers} />
+      <HomeContent jobs={jobs} helpers={helpers} />
     </>
   )
 }

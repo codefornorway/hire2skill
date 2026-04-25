@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { useLanguage } from '@/context/LanguageContext'
 import {
@@ -119,6 +120,7 @@ export default function OnboardingForm({ userId, userEmail }: { userId: string; 
   const [hourlyRate, setHourlyRate] = useState('')
   const [categories, setCategories] = useState<string[]>([])
   const [location, setLocation] = useState('')
+  const [videoIntroUrl, setVideoIntroUrl] = useState('')
   const [locSuggestions, setLocSuggestions] = useState<string[]>([])
   const [showLocSuggestions, setShowLocSuggestions] = useState(false)
   const locRef = useRef<HTMLDivElement>(null)
@@ -216,6 +218,7 @@ export default function OnboardingForm({ userId, userEmail }: { userId: string; 
       hourly_rate: hourlyRate ? Number(hourlyRate) : null,
       categories,
       location: location.trim(),
+      video_intro_url: videoIntroUrl.trim() || null,
     })
     if (ok) setStep(3)
   }
@@ -442,6 +445,17 @@ export default function OnboardingForm({ userId, userEmail }: { userId: string; 
                   </div>
                 </div>
 
+                {/* Video intro URL (optional) */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                    Video intro <span className="text-gray-400 font-normal">(optional)</span>
+                  </label>
+                  <input type="url" value={videoIntroUrl} onChange={e => setVideoIntroUrl(e.target.value)}
+                    placeholder="YouTube link, e.g. https://youtube.com/watch?v=..."
+                    className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400 transition" />
+                  <p className="text-xs text-gray-400 mt-1.5">A short 30–60 second video helps clients trust you. Paste a YouTube or Vimeo link.</p>
+                </div>
+
                 {serverError && (
                   <p className="text-sm text-red-500 bg-red-50 rounded-xl px-4 py-3">{serverError}</p>
                 )}
@@ -496,22 +510,22 @@ export default function OnboardingForm({ userId, userEmail }: { userId: string; 
 
               {/* Action buttons */}
               <div className="flex flex-col gap-3">
-                <a href="/dashboard"
+                <Link href="/dashboard"
                   className="block w-full rounded-xl py-3.5 text-sm font-bold text-white text-center transition-opacity hover:opacity-90"
                   style={{ background: 'linear-gradient(90deg,#2563EB,#38BDF8)' }}>
                   {role === 'helper' ? 'Go to my dashboard →' : 'Browse helpers →'}
-                </a>
+                </Link>
                 {role === 'poster' && (
-                  <a href="/post"
+                  <Link href="/post"
                     className="block w-full rounded-xl py-3 text-sm font-bold text-blue-600 border-2 border-blue-200 text-center hover:bg-blue-50 transition-colors">
                     Post your first task
-                  </a>
+                  </Link>
                 )}
                 {role === 'helper' && (
-                  <a href="/taskers"
+                  <Link href="/taskers"
                     className="block w-full rounded-xl py-3 text-sm font-semibold text-gray-500 text-center hover:text-gray-700 transition-colors">
                     See how you appear to clients →
-                  </a>
+                  </Link>
                 )}
               </div>
             </div>

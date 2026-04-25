@@ -105,6 +105,73 @@ const BRAND_BLUE = '#1E3A8A'
 const BRAND_MID = '#2563EB'
 const BRAND_BG = '#EFF6FF'
 
+function PriceCalculator({ svc }: { svc: ServiceDef }) {
+  const [hours, setHours] = useState(2)
+  const [size, setSize] = useState<'small' | 'medium' | 'large'>('medium')
+  const multiplier = size === 'small' ? 0.8 : size === 'large' ? 1.35 : 1
+  const low  = Math.round(svc.priceMin * hours * multiplier / 50) * 50
+  const high = Math.round(svc.priceMax * hours * multiplier / 50) * 50
+
+  return (
+    <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-7">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: BRAND_BG }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={BRAND_MID} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        </div>
+        <div>
+          <h3 className="text-base font-extrabold text-gray-900">Price estimator</h3>
+          <p className="text-xs text-gray-400">Get an instant cost estimate for your job</p>
+        </div>
+      </div>
+
+      <div className="space-y-5">
+        {/* Hours slider */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-sm font-semibold text-gray-700">Estimated hours</label>
+            <span className="text-sm font-bold text-blue-600">{hours}h</span>
+          </div>
+          <input type="range" min={1} max={8} step={0.5} value={hours}
+            onChange={e => setHours(Number(e.target.value))}
+            className="w-full accent-blue-600" />
+          <div className="flex justify-between text-xs text-gray-400 mt-1">
+            <span>1h</span><span>4h</span><span>8h</span>
+          </div>
+        </div>
+
+        {/* Job size */}
+        <div>
+          <label className="text-sm font-semibold text-gray-700 block mb-2">Job size</label>
+          <div className="grid grid-cols-3 gap-2">
+            {(['small', 'medium', 'large'] as const).map(s => (
+              <button key={s} type="button" onClick={() => setSize(s)}
+                className="rounded-xl py-2 text-sm font-semibold border transition-all capitalize"
+                style={size === s
+                  ? { background: BRAND_GRADIENT, color: '#fff', borderColor: 'transparent' }
+                  : { background: '#F9FAFB', color: '#374151', borderColor: '#E5E7EB' }}>
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Result */}
+        <div className="rounded-2xl p-5 text-center" style={{ background: BRAND_BG }}>
+          <p className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-1">Estimated cost</p>
+          <p className="text-3xl font-extrabold text-gray-900">
+            {low.toLocaleString()}–{high.toLocaleString()} <span className="text-lg text-gray-500 font-semibold">NOK</span>
+          </p>
+          <p className="text-xs text-gray-400 mt-1">Based on {hours}h at {svc.priceMin}–{svc.priceMax} NOK/hr</p>
+        </div>
+
+        <p className="text-xs text-gray-400 text-center">
+          Estimate only — final price agreed with your helper.
+        </p>
+      </div>
+    </div>
+  )
+}
+
 export default function ServicePageContent({
   svc, helpers, isLoggedIn,
 }: {
@@ -156,15 +223,17 @@ export default function ServicePageContent({
 
       <div className="mx-auto max-w-6xl px-6 py-12 space-y-14">
 
-        {/* ── WHAT'S INCLUDED ──────────────────────────────────────────────────── */}
-        <section className="grid lg:grid-cols-2 gap-8">
-          <div>
-            <h2 className="text-2xl font-extrabold text-gray-900 mb-6">What's included</h2>
+        {/* ── PRICE CALCULATOR + WHAT'S INCLUDED ───────────────────────────────── */}
+        <section className="grid lg:grid-cols-2 gap-8 items-start">
+          <div className="order-2 lg:order-1">
+            <PriceCalculator svc={svc} />
+          </div>
+          <div className="order-1 lg:order-2">
+            <h2 className="text-2xl font-extrabold text-gray-900 mb-6">What&apos;s included</h2>
             <ul className="space-y-3">
               {svc.included.map((item, i) => (
                 <li key={i} className="flex items-start gap-3">
-                  <span className="mt-0.5 h-5 w-5 rounded-full flex items-center justify-center shrink-0"
-                    style={{ background: BRAND_BG }}>
+                  <span className="mt-0.5 h-5 w-5 rounded-full flex items-center justify-center shrink-0" style={{ background: BRAND_BG }}>
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={BRAND_MID} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                   </span>
                   <span className="text-sm text-gray-700">{item}</span>
@@ -176,16 +245,16 @@ export default function ServicePageContent({
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Not included (add-ons)</p>
                 <ul className="space-y-1">
                   {svc.notIncluded.map((item, i) => (
-                    <li key={i} className="flex items-center gap-2 text-sm text-gray-400">
-                      <span className="text-gray-300">—</span> {item}
-                    </li>
+                    <li key={i} className="flex items-center gap-2 text-sm text-gray-400"><span className="text-gray-300">—</span> {item}</li>
                   ))}
                 </ul>
               </div>
             )}
           </div>
+        </section>
 
-          {/* ── HOW IT WORKS ── */}
+        {/* ── HOW IT WORKS ─────────────────────────────────────────────────────── */}
+        <section className="grid lg:grid-cols-2 gap-8 items-start">
           <div>
             <h2 className="text-2xl font-extrabold text-gray-900 mb-6">How it works</h2>
             <div className="space-y-4">
@@ -202,20 +271,22 @@ export default function ServicePageContent({
                 </div>
               ))}
             </div>
+          </div>
 
-            {/* Trust badges */}
-            <div className="mt-8 grid grid-cols-3 gap-3">
-              {[
-                { icon: '✓', label: 'ID Verified helpers' },
-                { icon: '★', label: 'Rated & reviewed' },
-                { icon: '🔒', label: 'Secure payments' },
-              ].map((b, i) => (
-                <div key={i} className="text-center p-3 rounded-xl border border-gray-100 bg-white">
-                  <div className="text-xl mb-1">{b.icon}</div>
-                  <p className="text-xs font-semibold text-gray-600">{b.label}</p>
+          {/* Trust badges */}
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>, bg: '#F0FDF4', label: 'ID Verified helpers' },
+              { icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="#F59E0B"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>, bg: '#FFFBEB', label: 'Rated & reviewed' },
+              { icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0284C7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>, bg: '#F0F9FF', label: 'Secure payments' },
+            ].map((b, i) => (
+              <div key={i} className="flex flex-col items-center text-center p-4 rounded-2xl border border-gray-100 bg-white gap-2">
+                <div className="h-11 w-11 rounded-xl flex items-center justify-center" style={{ background: b.bg }}>
+                  {b.icon}
                 </div>
-              ))}
-            </div>
+                <p className="text-xs font-semibold text-gray-600 leading-tight">{b.label}</p>
+              </div>
+            ))}
           </div>
         </section>
 

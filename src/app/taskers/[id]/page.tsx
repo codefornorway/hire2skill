@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import TaskerProfileContent from './TaskerProfileContent'
 import JsonLd from '@/components/JsonLd'
+import { buildTaskerProfileMetadata } from '@/lib/seo'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,22 +28,15 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const name = tasker.display_name ?? 'Local Helper'
   const category = (tasker.categories ?? [])[0] ?? 'Helper'
   const location = tasker.location ?? 'Norway'
-  const description = (tasker.bio ?? '').slice(0, 155)
-  const title = `${name} — ${category} in ${location}`
 
-  return {
-    title,
-    description,
-    openGraph: {
-      title: `${title} | SkillLink`,
-      description,
-      url: `https://skilllink.no/taskers/${id}`,
-      type: 'profile',
-      images: profile?.avatar_url
-        ? [{ url: profile.avatar_url, width: 400, height: 400, alt: name }]
-        : undefined,
-    },
-  }
+  return buildTaskerProfileMetadata({
+    id,
+    name,
+    category,
+    location,
+    bio: tasker.bio ?? '',
+    avatarUrl: profile?.avatar_url ?? null,
+  })
 }
 
 const SAMPLE_TASKERS_FULL = [

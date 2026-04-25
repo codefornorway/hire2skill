@@ -5,13 +5,9 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useSearchParams } from 'next/navigation'
 import { useLanguage } from '@/context/LanguageContext'
-import {
-  Search, X,
-  SprayCan, Truck, GraduationCap, Package, Wrench, PartyPopper, Monitor, Leaf,
-  PawPrint, ChefHat, ShoppingBag, Wind, Scissors, Baby, Car, PaintBucket,
-  Paintbrush, Wand2, Snowflake, Dog, Sofa, AppWindow, Camera, Dumbbell,
-  HeartHandshake, Music,
-} from 'lucide-react'
+import { Search, X, LayoutGrid, Map } from 'lucide-react'
+import { CATEGORY_BY_KEY, CATEGORY_LABEL_BY_KEY, CATEGORY_LABELS, toCategoryKey } from '@/lib/categories'
+import { categoryIconProps } from '@/lib/category-icon'
 
 type Tasker = {
   id: string
@@ -32,55 +28,107 @@ function isElite(t: Tasker) {
   return t.verified && t.rating >= 4.8 && (t.tasks_done ?? 0) >= 10
 }
 
-const CATEGORIES = [
-  'All',
-  // Home & Cleaning
-  'Cleaning', 'Window Cleaning', 'Painting', 'Gardening', 'Snow Removal',
-  // Handyman
-  'Handyman', 'Furniture Assembly',
-  // Moving
-  'Moving', 'Delivery',
-  // Tech
-  'IT & Tech',
-  // People & Care
-  'Tutoring', 'Driving Lessons', 'Kids Care', 'Elder Care', 'Personal Training', 'Music Lessons', 'Dog Walking', 'Pet Care',
-  // Events & Lifestyle
-  'Events', 'Photography', 'Cooking', 'Baking', 'Shopping',
-  // Beauty & Crafts
-  'Makeup Artist', 'Hair Dresser', 'Knitting', 'Sewing', 'Car Wash',
-]
-
-type CatMeta = { bg: string; color: string; Icon: React.ElementType }
-const CAT_ICONS: Record<string, CatMeta> = {
-  'Cleaning':           { bg: '#F0FDF4', color: '#16A34A', Icon: SprayCan },
-  'Moving':             { bg: '#EFF6FF', color: '#2563EB', Icon: Truck },
-  'Tutoring':           { bg: '#FFFBEB', color: '#D97706', Icon: GraduationCap },
-  'Delivery':           { bg: '#FFF7ED', color: '#EA580C', Icon: Package },
-  'Handyman':           { bg: '#F5F3FF', color: '#7C3AED', Icon: Wrench },
-  'Events':             { bg: '#FFF1F2', color: '#E11D48', Icon: PartyPopper },
-  'IT & Tech':          { bg: '#F0F9FF', color: '#0284C7', Icon: Monitor },
-  'Gardening':          { bg: '#F0FDF4', color: '#15803D', Icon: Leaf },
-  'Pet Care':           { bg: '#FFF7ED', color: '#F97316', Icon: PawPrint },
-  'Cooking':            { bg: '#FEF2F2', color: '#DC2626', Icon: ChefHat },
-  'Shopping':           { bg: '#F5F3FF', color: '#8B5CF6', Icon: ShoppingBag },
-  'Knitting':           { bg: '#FDF4FF', color: '#C026D3', Icon: Wind },
-  'Sewing':             { bg: '#ECFEFF', color: '#0891B2', Icon: Scissors },
-  'Kids Care':          { bg: '#FEFCE8', color: '#CA8A04', Icon: Baby },
-  'Car Wash':           { bg: '#F0F9FF', color: '#0EA5E9', Icon: Car },
-  'Painting':           { bg: '#EEF2FF', color: '#4F46E5', Icon: PaintBucket },
-  'Makeup Artist':      { bg: '#FDF2F8', color: '#DB2777', Icon: Paintbrush },
-  'Hair Dresser':       { bg: '#F3E8FF', color: '#7E22CE', Icon: Wand2 },
-  'Snow Removal':       { bg: '#EFF6FF', color: '#0369A1', Icon: Snowflake },
-  'Dog Walking':        { bg: '#FEF9C3', color: '#92400E', Icon: Dog },
-  'Furniture Assembly': { bg: '#F5F3FF', color: '#6D28D9', Icon: Sofa },
-  'Window Cleaning':    { bg: '#ECFEFF', color: '#0E7490', Icon: AppWindow },
-  'Photography':        { bg: '#FFF1F2', color: '#BE123C', Icon: Camera },
-  'Personal Training':  { bg: '#F0FDF4', color: '#166534', Icon: Dumbbell },
-  'Elder Care':         { bg: '#FFF7ED', color: '#C2410C', Icon: HeartHandshake },
-  'Music Lessons':      { bg: '#EEF2FF', color: '#4338CA', Icon: Music },
-}
+const CATEGORIES = ['All', ...CATEGORY_LABELS]
 
 const AVATAR_COLORS = ['#2563EB', '#16A34A', '#7C3AED', '#D97706', '#E11D48', '#0284C7', '#EA580C', '#0F766E']
+
+// City bounding boxes (rough, for pin placement)
+const CITY_ZONES: Record<string, { x: number; y: number; label: string }> = {
+  'oslo':         { x: 52, y: 34, label: 'Oslo' },
+  'bergen':       { x: 18, y: 44, label: 'Bergen' },
+  'trondheim':    { x: 45, y: 18, label: 'Trondheim' },
+  'stavanger':    { x: 15, y: 58, label: 'Stavanger' },
+  'tromsø':       { x: 55, y: 5,  label: 'Tromsø' },
+  'kristiansand': { x: 30, y: 70, label: 'Kristiansand' },
+  'drammen':      { x: 49, y: 38, label: 'Drammen' },
+  'fredrikstad':  { x: 55, y: 42, label: 'Fredrikstad' },
+  'bodø':         { x: 42, y: 12, label: 'Bodø' },
+  'ålesund':      { x: 24, y: 32, label: 'Ålesund' },
+}
+
+function cityKey(location: string) {
+  return location.toLowerCase().split(/[–\s]/)[0].trim()
+}
+
+function MapView({ taskers, bookLabel }: { taskers: Tasker[]; bookLabel: string }) {
+  const [active, setActive] = useState<Tasker | null>(null)
+
+  // Group taskers by city zone
+  const pins = taskers.reduce<{ key: string; zone: { x: number; y: number; label: string }; items: Tasker[] }[]>((acc, t) => {
+    const key = cityKey(t.location)
+    const zone = CITY_ZONES[key] ?? CITY_ZONES['oslo']
+    const existing = acc.find(p => p.key === key)
+    if (existing) { existing.items.push(t); return acc }
+    return [...acc, { key, zone, items: [t] }]
+  }, [])
+
+  return (
+    <div className="relative w-full rounded-2xl overflow-hidden border border-gray-200 bg-white" style={{ height: 480 }}>
+      {/* Norway SVG outline map */}
+      <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full" preserveAspectRatio="xMidYMid slice">
+        <rect width="100" height="100" fill="#EFF6FF" />
+        {/* Simplified Norway landmass */}
+        <path d="M30 5 Q40 3 50 8 Q58 6 60 10 Q65 8 68 14 Q72 12 74 18 Q78 15 80 22
+                 Q82 20 84 28 Q86 26 85 35 Q88 33 87 42 Q90 40 88 50
+                 Q90 52 88 60 Q89 65 86 70 Q88 75 84 78 Q82 82 78 84
+                 Q74 88 70 86 Q65 90 60 87 Q55 92 50 88 Q44 92 40 87
+                 Q35 90 32 85 Q28 88 26 82 Q22 84 22 78 Q18 80 20 72
+                 Q16 70 18 62 Q14 60 16 52 Q12 48 15 40 Q11 36 14 28
+                 Q10 24 14 18 Q12 14 17 10 Q20 6 25 5 Z"
+          fill="#DBEAFE" stroke="#93C5FD" strokeWidth="0.5" />
+        {/* Water body */}
+        <text x="5" y="50" fontSize="3" fill="#60A5FA" fontWeight="bold" opacity="0.6">North Sea</text>
+        <text x="62" y="25" fontSize="2.5" fill="#60A5FA" opacity="0.6">Norwegian Sea</text>
+      </svg>
+
+      {/* City pins */}
+      {pins.map(pin => (
+        <button key={pin.key} type="button"
+          onClick={() => setActive(active?.id === pin.items[0].id && pin.items.length === 1 ? null : pin.items[0])}
+          className="absolute transform -translate-x-1/2 -translate-y-full group"
+          style={{ left: `${pin.zone.x}%`, top: `${pin.zone.y}%`, zIndex: active && pin.items.some(t => t.id === active.id) ? 20 : 10 }}>
+          <div className="flex flex-col items-center">
+            <div className="rounded-full text-white text-xs font-extrabold px-2.5 py-1 shadow-lg transition-transform group-hover:scale-110 flex items-center gap-1"
+              style={{ background: 'linear-gradient(135deg,#1E3A8A,#38BDF8)', minWidth: 28 }}>
+              {pin.items.length}
+            </div>
+            <div className="w-0 h-0 border-l-4 border-r-4 border-t-6 border-l-transparent border-r-transparent"
+              style={{ borderTopColor: '#1E3A8A' }} />
+            <span className="text-[9px] font-bold text-blue-900 mt-0.5 bg-white/80 rounded px-1">{pin.zone.label}</span>
+          </div>
+        </button>
+      ))}
+
+      {/* Popup */}
+      {active && (
+        <div className="absolute bottom-4 left-4 right-4 bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 z-30">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0"
+              style={{ background: AVATAR_COLORS[active.display_name.charCodeAt(0) % AVATAR_COLORS.length] }}>
+              {active.display_name.split(' ').map(w => w[0]?.toUpperCase()).join('').slice(0, 2)}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-gray-900 text-sm truncate">{active.display_name}</p>
+              <p className="text-xs text-gray-400">{active.location} · {active.hourly_rate} NOK/hr</p>
+            </div>
+            <div className="flex gap-2">
+              <Link href={`/taskers/${active.id}`}
+                className="rounded-xl px-3 py-1.5 text-xs font-bold text-white hover:opacity-90 transition-opacity"
+                style={{ background: 'linear-gradient(90deg,#2563EB,#38BDF8)' }}>
+                {bookLabel}
+              </Link>
+              <button onClick={() => setActive(null)} className="text-gray-400 hover:text-gray-600 px-1">✕</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="absolute top-3 left-3 bg-white/90 rounded-xl px-3 py-1.5 text-xs font-semibold text-gray-600 shadow-sm border border-gray-100">
+        {taskers.length} helper{taskers.length !== 1 ? 's' : ''} across Norway
+      </div>
+    </div>
+  )
+}
 
 const SORT_OPTIONS = [
   { value: 'recommended',  label: 'Recommended' },
@@ -107,9 +155,20 @@ function Stars({ rating }: { rating: number }) {
 function TaskerCard({ tasker, index, bookLabel }: { tasker: Tasker; index: number; bookLabel: string }) {
   const initials = tasker.display_name.split(' ').slice(0, 2).map(w => w[0]?.toUpperCase() ?? '').join('')
   const color = AVATAR_COLORS[index % AVATAR_COLORS.length]
+  const availableToday = tasker.response_hours <= 2
+  const instantBook = tasker.verified && tasker.rating >= 4.8
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-6 hover:border-blue-400 hover:shadow-xl transition-all duration-200 flex flex-col">
+    <div className="bg-white rounded-2xl border border-gray-200 p-6 hover:border-blue-400 hover:shadow-xl transition-all duration-200 flex flex-col relative overflow-hidden">
+      {/* Availability ribbon */}
+      {availableToday && (
+        <div className="absolute top-0 right-0">
+          <div className="bg-green-500 text-white text-[10px] font-extrabold px-3 py-1 rounded-bl-xl rounded-tr-2xl tracking-wide">
+            Available today
+          </div>
+        </div>
+      )}
+
       <div className="flex items-start gap-4 mb-4">
         {tasker.avatar_url ? (
           <Image src={tasker.avatar_url} alt={tasker.display_name} width={64} height={64} className="h-16 w-16 rounded-2xl object-cover shrink-0" />
@@ -126,6 +185,12 @@ function TaskerCard({ tasker, index, bookLabel }: { tasker: Tasker; index: numbe
               <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold border"
                 style={{ background: 'linear-gradient(135deg,#fef9c3,#fde68a)', color: '#92400e', borderColor: '#fcd34d' }}>
                 ★ Elite
+              </span>
+            )}
+            {instantBook && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs font-bold text-blue-700 border border-blue-100">
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#1D4ED8" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                Instant Book
               </span>
             )}
             {tasker.verified && (
@@ -165,13 +230,13 @@ function TaskerCard({ tasker, index, bookLabel }: { tasker: Tasker; index: numbe
         </span>
         <div className="flex gap-1 ml-auto">
           {tasker.categories.slice(0, 2).map(c => {
-            const meta = CAT_ICONS[c]
+            const meta = CATEGORY_BY_KEY[toCategoryKey(c)]
             const ChipIcon = meta?.Icon
             return (
               <span key={c} className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold"
                 style={{ background: meta?.bg ?? '#EFF6FF', color: meta?.color ?? '#2563EB' }}>
-                {ChipIcon && <ChipIcon size={11} strokeWidth={2} />}
-                {c}
+                {ChipIcon && <ChipIcon {...categoryIconProps(12, meta?.color ?? '#2563EB')} />}
+                {CATEGORY_LABEL_BY_KEY[toCategoryKey(c)] ?? c}
               </span>
             )
           })}
@@ -195,10 +260,12 @@ function TaskerCard({ tasker, index, bookLabel }: { tasker: Tasker; index: numbe
 
 export default function TaskersContent({ taskers, activeCategory }: { taskers: Tasker[]; activeCategory: string | null }) {
   const { t } = useLanguage()
+  const tt = t.taskers
   const searchParams = useSearchParams()
   const posted = searchParams.get('posted') === '1'
 
   const [showBanner, setShowBanner] = useState(posted)
+  const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid')
   const [query, setQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const [category, setCategory] = useState(activeCategory ?? 'All')
@@ -208,6 +275,10 @@ export default function TaskersContent({ taskers, activeCategory }: { taskers: T
   const [minRating, setMinRating] = useState(0)
   const [maxResponseHours, setMaxResponseHours] = useState(24)
   const [sortBy, setSortBy] = useState<SortBy>('recommended')
+  const [wantNorwegian, setWantNorwegian] = useState(false)
+  const [wantEnglish, setWantEnglish] = useState(false)
+  const [wantTools, setWantTools] = useState(false)
+  const [wantInvoice, setWantInvoice] = useState(false)
 
   useEffect(() => {
     const id = setTimeout(() => setDebouncedQuery(query), 280)
@@ -226,10 +297,27 @@ export default function TaskersContent({ taskers, activeCategory }: { taskers: T
     return ['All', ...Array.from(set).sort()]
   }, [taskers])
 
-  const hasActiveFilters = !!(debouncedQuery || category !== 'All' || priceMin || priceMax || location !== 'All' || minRating > 0 || maxResponseHours < 24)
+  const hasActiveFilters = !!(
+    debouncedQuery ||
+    category !== 'All' ||
+    priceMin ||
+    priceMax ||
+    location !== 'All' ||
+    minRating > 0 ||
+    maxResponseHours < 24 ||
+    wantNorwegian ||
+    wantEnglish ||
+    wantTools ||
+    wantInvoice
+  )
 
   const filtered = useMemo(() => {
     let list = [...taskers]
+
+    const norwegianSignals = /(norsk|bokmål|bokmaal|nynorsk|snakker norsk|taler norsk|på norsk|norwegian|fluent norwegian)/i
+    const englishSignals = /(english|engelsk|fluent english|business english|comfortable in english|native english)/i
+    const toolSignals = /(tools?|utstyr|equipment|drill|driver|snekker|håndverk|handverk|maskin|lift|stillas|scaffold|varebil|van\b|trail)/i
+    const invoiceSignals = /(invoice|faktura|mva\b|vat\b|org\.?\s*nr|orgnr|foretak|enk\b|as\b|vat\-?registered)/i
 
     if (debouncedQuery.trim()) {
       const q = debouncedQuery.toLowerCase()
@@ -241,7 +329,15 @@ export default function TaskersContent({ taskers, activeCategory }: { taskers: T
       )
     }
 
-    if (category !== 'All') list = list.filter(t => t.categories.includes(category))
+    if (wantNorwegian) list = list.filter(t => norwegianSignals.test(t.bio))
+    if (wantEnglish) list = list.filter(t => englishSignals.test(t.bio))
+    if (wantTools) list = list.filter(t => toolSignals.test(t.bio))
+    if (wantInvoice) list = list.filter(t => invoiceSignals.test(t.bio))
+
+    if (category !== 'All') {
+      const activeKey = toCategoryKey(category)
+      list = list.filter(t => t.categories.some(c => toCategoryKey(c) === activeKey))
+    }
     if (priceMin)           list = list.filter(t => t.hourly_rate >= Number(priceMin))
     if (priceMax)           list = list.filter(t => t.hourly_rate <= Number(priceMax))
     if (location !== 'All') list = list.filter(t => t.location === location)
@@ -257,7 +353,7 @@ export default function TaskersContent({ taskers, activeCategory }: { taskers: T
     }
 
     return list
-  }, [taskers, debouncedQuery, category, priceMin, priceMax, location, minRating, maxResponseHours, sortBy])
+  }, [taskers, debouncedQuery, category, priceMin, priceMax, location, minRating, maxResponseHours, sortBy, wantNorwegian, wantEnglish, wantTools, wantInvoice])
 
   function clearAll() {
     setQuery('')
@@ -269,6 +365,10 @@ export default function TaskersContent({ taskers, activeCategory }: { taskers: T
     setMinRating(0)
     setMaxResponseHours(24)
     setSortBy('recommended')
+    setWantNorwegian(false)
+    setWantEnglish(false)
+    setWantTools(false)
+    setWantInvoice(false)
   }
 
   return (
@@ -291,6 +391,7 @@ export default function TaskersContent({ taskers, activeCategory }: { taskers: T
         <div className="mx-auto max-w-6xl">
           <h1 className="text-3xl font-extrabold text-gray-900 mb-2">Find a helper near you</h1>
           <p className="text-gray-500 text-base">Verified locals ready to help — book in minutes</p>
+          <p className="text-xs text-gray-400 mt-3 max-w-2xl leading-relaxed">{tt.trustLine}</p>
 
           {/* Search bar */}
           <div className="relative mt-6 w-full">
@@ -381,6 +482,45 @@ export default function TaskersContent({ taskers, activeCategory }: { taskers: T
             <option value={4}>Within 4 hours</option>
           </select>
 
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setWantNorwegian(v => !v)}
+              className="rounded-full px-3 py-1.5 text-xs font-semibold border transition-colors"
+              style={wantNorwegian
+                ? { background: 'var(--sl-gradient-brand)', color: '#fff', borderColor: 'transparent' }
+                : { background: '#fff', color: '#4B5563', borderColor: '#E5E7EB' }}>
+              {tt.filterLangNo}
+            </button>
+            <button
+              type="button"
+              onClick={() => setWantEnglish(v => !v)}
+              className="rounded-full px-3 py-1.5 text-xs font-semibold border transition-colors"
+              style={wantEnglish
+                ? { background: 'var(--sl-gradient-brand)', color: '#fff', borderColor: 'transparent' }
+                : { background: '#fff', color: '#4B5563', borderColor: '#E5E7EB' }}>
+              {tt.filterLangEn}
+            </button>
+            <button
+              type="button"
+              onClick={() => setWantTools(v => !v)}
+              className="rounded-full px-3 py-1.5 text-xs font-semibold border transition-colors"
+              style={wantTools
+                ? { background: 'var(--sl-gradient-brand)', color: '#fff', borderColor: 'transparent' }
+                : { background: '#fff', color: '#4B5563', borderColor: '#E5E7EB' }}>
+              {tt.filterTools}
+            </button>
+            <button
+              type="button"
+              onClick={() => setWantInvoice(v => !v)}
+              className="rounded-full px-3 py-1.5 text-xs font-semibold border transition-colors"
+              style={wantInvoice
+                ? { background: 'var(--sl-gradient-brand)', color: '#fff', borderColor: 'transparent' }
+                : { background: '#fff', color: '#4B5563', borderColor: '#E5E7EB' }}>
+              {tt.filterInvoice}
+            </button>
+          </div>
+
           {/* Clear all */}
           {hasActiveFilters && (
             <button onClick={clearAll}
@@ -400,20 +540,49 @@ export default function TaskersContent({ taskers, activeCategory }: { taskers: T
           </div>
         </div>
 
-        {/* Results count */}
-        <div className="flex items-center gap-2 mb-6">
+        {/* Results count + seasonal tag + view toggle */}
+        <div className="flex items-center justify-between gap-2 mb-6">
           <p className="text-sm text-gray-500">
             <span className="font-bold text-gray-900">{filtered.length}</span> helper{filtered.length !== 1 ? 's' : ''} found
+            {hasActiveFilters && (
+              <button onClick={clearAll} className="ml-2 text-xs text-blue-600 hover:underline">
+                clear filters
+              </button>
+            )}
           </p>
-          {hasActiveFilters && (
-            <button onClick={clearAll} className="text-xs text-blue-600 hover:underline">
-              clear filters
-            </button>
-          )}
+          <div className="flex items-center gap-3">
+            {!hasActiveFilters && (
+              <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-200 px-3 py-1 text-xs font-bold text-amber-700">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+                Popular this spring
+              </span>
+            )}
+            {/* Grid / Map toggle */}
+            <div className="flex items-center gap-1 rounded-xl border border-gray-200 bg-white p-1">
+              <button onClick={() => setViewMode('grid')}
+                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all"
+                style={viewMode === 'grid'
+                  ? { background: 'linear-gradient(90deg,#2563EB,#38BDF8)', color: '#fff' }
+                  : { color: '#6B7280' }}>
+                <LayoutGrid size={13} strokeWidth={2} />
+                Grid
+              </button>
+              <button onClick={() => setViewMode('map')}
+                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all"
+                style={viewMode === 'map'
+                  ? { background: 'linear-gradient(90deg,#2563EB,#38BDF8)', color: '#fff' }
+                  : { color: '#6B7280' }}>
+                <Map size={13} strokeWidth={2} />
+                Map
+              </button>
+            </div>
+          </div>
         </div>
 
-        {/* Grid */}
-        {filtered.length === 0 ? (
+        {/* Grid / Map */}
+        {viewMode === 'map' ? (
+          <MapView taskers={filtered} bookLabel={t.home?.bookNow ?? 'Book now'} />
+        ) : filtered.length === 0 ? (
           <div className="text-center py-20">
             <div className="h-16 w-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
               <Search size={28} className="text-gray-300" />

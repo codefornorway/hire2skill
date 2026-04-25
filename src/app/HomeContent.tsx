@@ -1,31 +1,26 @@
 'use client'
 
+import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useLanguage } from '@/context/LanguageContext'
-import {
-  SprayCan, Truck, GraduationCap, Package, Wrench, PartyPopper, Monitor, Leaf,
-  PawPrint, ChefHat, ShoppingBag, Wind, Scissors, Baby, Car, PaintBucket,
-  Paintbrush, Wand2, Snowflake, Dog, Sofa, AppWindow, Camera, Dumbbell,
-  HeartHandshake, Music,
-} from 'lucide-react'
+import { Search, X } from 'lucide-react'
+import { CATEGORY_BY_KEY, CATEGORY_KEYS, CATEGORY_LABEL_BY_KEY, toCategoryKey } from '@/lib/categories'
+import { categoryIconProps } from '@/lib/category-icon'
 
 import type { RealHelper } from './page'
 
 type Job = { title: string; location: string; price: number | null; category: string; urgent?: boolean }
 
-// Normalise a human-readable category label to a CAT_ICONS key
-function toCatKey(label: string): string {
-  const overrides: Record<string, string> = {
-    'IT & Tech': 'it', 'Pet Care': 'petcare', 'Kids Care': 'kidscare',
-    'Car Wash': 'carwash', 'Makeup Artist': 'makeup', 'Hair Dresser': 'hairdresser',
-    'Snow Removal': 'snowremoval', 'Dog Walking': 'dogwalking',
-    'Furniture Assembly': 'furnitureassembly', 'Window Cleaning': 'windowcleaning',
-    'Personal Training': 'personaltraining', 'Elder Care': 'eldercare',
-    'Music Lessons': 'musiclessons',
-  }
-  return overrides[label] ?? label.toLowerCase().replace(/\s+/g, '').replace('&', '')
-}
+const CAT_FILTER_GROUPS = [
+  { label: 'All',            keys: [] as string[] },
+  { label: 'Home',           keys: ['cleaning', 'windowcleaning', 'snowremoval', 'gardening', 'painting'] },
+  { label: 'Handyman',       keys: ['handyman', 'furnitureassembly'] },
+  { label: 'Moving',         keys: ['moving', 'delivery'] },
+  { label: 'Tech',           keys: ['it'] },
+  { label: 'Care & Lessons', keys: ['tutoring', 'drivinglessons', 'kidscare', 'eldercare', 'petcare', 'dogwalking', 'personaltraining', 'musiclessons'] },
+  { label: 'Events & More',  keys: ['events', 'photography', 'cooking', 'baking', 'makeup', 'hairdresser', 'shopping', 'carwash', 'knitting', 'sewing'] },
+]
 
 // ── Inline Norway flag SVG (no emoji) ──────────────────────────────────────
 function NorwayFlag({ size = 16 }: { size?: number }) {
@@ -55,36 +50,6 @@ function Stars({ rating }: { rating: number }) {
   )
 }
 
-// ── Category icon map ───────────────────────────────────────────────────────
-type CatIconEntry = { bg: string; fg: string; Icon: React.ElementType }
-const CAT_ICONS: Record<string, CatIconEntry> = {
-  cleaning:          { bg: '#F0FDF4', fg: '#16A34A', Icon: SprayCan },
-  moving:            { bg: '#EFF6FF', fg: '#2563EB', Icon: Truck },
-  tutoring:          { bg: '#FFFBEB', fg: '#D97706', Icon: GraduationCap },
-  delivery:          { bg: '#FFF7ED', fg: '#EA580C', Icon: Package },
-  handyman:          { bg: '#F5F3FF', fg: '#7C3AED', Icon: Wrench },
-  events:            { bg: '#FFF1F2', fg: '#E11D48', Icon: PartyPopper },
-  it:                { bg: '#F0F9FF', fg: '#0284C7', Icon: Monitor },
-  gardening:         { bg: '#F0FDF4', fg: '#15803D', Icon: Leaf },
-  petcare:           { bg: '#FFF7ED', fg: '#F97316', Icon: PawPrint },
-  cooking:           { bg: '#FEF2F2', fg: '#DC2626', Icon: ChefHat },
-  shopping:          { bg: '#F5F3FF', fg: '#8B5CF6', Icon: ShoppingBag },
-  knitting:          { bg: '#FDF4FF', fg: '#C026D3', Icon: Wind },
-  sewing:            { bg: '#ECFEFF', fg: '#0891B2', Icon: Scissors },
-  kidscare:          { bg: '#FEFCE8', fg: '#CA8A04', Icon: Baby },
-  carwash:           { bg: '#F0F9FF', fg: '#0EA5E9', Icon: Car },
-  painting:          { bg: '#EEF2FF', fg: '#4F46E5', Icon: PaintBucket },
-  makeup:            { bg: '#FDF2F8', fg: '#DB2777', Icon: Paintbrush },
-  hairdresser:       { bg: '#F3E8FF', fg: '#7E22CE', Icon: Wand2 },
-  snowremoval:       { bg: '#EFF6FF', fg: '#0369A1', Icon: Snowflake },
-  dogwalking:        { bg: '#FEF9C3', fg: '#92400E', Icon: Dog },
-  furnitureassembly: { bg: '#F5F3FF', fg: '#6D28D9', Icon: Sofa },
-  windowcleaning:    { bg: '#ECFEFF', fg: '#0E7490', Icon: AppWindow },
-  photography:       { bg: '#FFF1F2', fg: '#BE123C', Icon: Camera },
-  personaltraining:  { bg: '#F0FDF4', fg: '#166534', Icon: Dumbbell },
-  eldercare:         { bg: '#FFF7ED', fg: '#C2410C', Icon: HeartHandshake },
-  musiclessons:      { bg: '#EEF2FF', fg: '#4338CA', Icon: Music },
-}
 
 // ── Sample tasker profiles (displayed as helpers) ───────────────────────────
 const SAMPLE_TASKERS = [
@@ -99,7 +64,7 @@ const AVATAR_COLORS = ['#2563EB', '#16A34A', '#7C3AED', '#D97706', '#E11D48', '#
 function TaskCard({ job, bookLabel, negotiableLabel }: { job: Job; bookLabel: string; negotiableLabel: string }) {
   const initials = job.title.split(' ').slice(0, 2).map(w => w[0]?.toUpperCase() ?? '').join('')
   const color = AVATAR_COLORS[Math.abs(job.title.charCodeAt(0)) % AVATAR_COLORS.length]
-  const cat = CAT_ICONS[toCatKey(job.category)] ?? CAT_ICONS.handyman
+  const cat = CATEGORY_BY_KEY[toCategoryKey(job.category)] ?? CATEGORY_BY_KEY.handyman
   const CatIcon = cat.Icon
 
   return (
@@ -118,7 +83,7 @@ function TaskCard({ job, bookLabel, negotiableLabel }: { job: Job; bookLabel: st
           </div>
         </div>
         <div className="h-9 w-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: cat.bg }}>
-          <CatIcon size={18} color={cat.fg} strokeWidth={1.75} />
+          <CatIcon {...categoryIconProps(18, cat.color)} />
         </div>
       </div>
 
@@ -138,7 +103,7 @@ function TaskCard({ job, bookLabel, negotiableLabel }: { job: Job; bookLabel: st
           {job.price ? `${job.price} NOK` : negotiableLabel}
         </span>
         <span className="rounded-xl px-4 py-2 text-sm font-bold text-white transition-opacity group-hover:opacity-90"
-          style={{ background: 'linear-gradient(90deg,#2563EB,#38BDF8)' }}>
+          style={{ background: 'var(--sl-gradient-primary)' }}>
           {bookLabel}
         </span>
       </div>
@@ -162,7 +127,7 @@ type DisplayHelper = {
 
 // ── Tasker profile card ─────────────────────────────────────────────────────
 function TaskerCard({ tasker, bookLabel, replyLabel, doneLabel }: { tasker: DisplayHelper; bookLabel: string; replyLabel: string; doneLabel: string }) {
-  const cat = CAT_ICONS[tasker.catKey] ?? CAT_ICONS.handyman
+  const cat = CATEGORY_BY_KEY[tasker.catKey] ?? CATEGORY_BY_KEY.handyman
   const CatIcon = cat.Icon
   const href = tasker.id ? `/taskers/${tasker.id}` : '/signup'
   return (
@@ -186,7 +151,7 @@ function TaskerCard({ tasker, bookLabel, replyLabel, doneLabel }: { tasker: Disp
           </div>
         </div>
         <div className="ml-auto h-10 w-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: cat.bg }}>
-          <CatIcon size={20} color={cat.fg} strokeWidth={1.75} />
+          <CatIcon {...categoryIconProps(20, cat.color)} />
         </div>
       </div>
 
@@ -210,7 +175,7 @@ function TaskerCard({ tasker, bookLabel, replyLabel, doneLabel }: { tasker: Disp
           {tasker.price ? `${tasker.price} NOK` : 'Negotiable'}
         </span>
         <span className="rounded-xl px-4 py-2 text-sm font-bold text-white transition-opacity group-hover:opacity-90"
-          style={{ background: 'linear-gradient(90deg,#2563EB,#38BDF8)' }}>
+          style={{ background: 'var(--sl-gradient-primary)' }}>
           {bookLabel}
         </span>
       </div>
@@ -219,9 +184,31 @@ function TaskerCard({ tasker, bookLabel, replyLabel, doneLabel }: { tasker: Disp
 }
 
 // ── Main export ─────────────────────────────────────────────────────────────
-export default function HomeContent({ jobs, totalJobs, helpers }: { jobs: Job[]; totalJobs: number; helpers: RealHelper[] | null }) {
+export default function HomeContent({ jobs, helpers }: { jobs: Job[]; helpers: RealHelper[] | null }) {
   const { t } = useLanguage()
   const h = t.home
+
+  const [catSearch, setCatSearch] = useState('')
+  const [catFilter, setCatFilter] = useState('All')
+
+  const catKeys = useMemo(() => {
+    const group = CAT_FILTER_GROUPS.find(g => g.label === catFilter)
+    let list = group && group.keys.length > 0 ? group.keys : CATEGORY_KEYS
+    if (catSearch.trim()) {
+      const q = catSearch.toLowerCase()
+      list = list.filter(k => (CATEGORY_LABEL_BY_KEY[k] ?? k).toLowerCase().includes(q))
+    }
+    return list
+  }, [catSearch, catFilter])
+
+  const seasonal = useMemo(() => {
+    const m = new Date().getMonth() + 1
+    const winter = m >= 11 || m <= 3
+    if (!h) return { title: '', body: '' }
+    return winter
+      ? { title: h.seasonalWinterTitle, body: h.seasonalWinterBody }
+      : { title: h.seasonalSummerTitle, body: h.seasonalSummerBody }
+  }, [h])
 
   const how1 = h?.how1
   const how2 = h?.how2
@@ -233,7 +220,7 @@ export default function HomeContent({ jobs, totalJobs, helpers }: { jobs: Job[];
   const displayHelpers: DisplayHelper[] = helpers
     ? helpers.map((p, i) => {
         const initials = p.name.split(' ').slice(0, 2).map(w => w[0]?.toUpperCase() ?? '').join('')
-        const catKey = p.categories.length > 0 ? toCatKey(p.categories[0]) : 'handyman'
+        const catKey = p.categories.length > 0 ? toCategoryKey(p.categories[0]) : 'handyman'
         return {
           id: p.id,
           initials,
@@ -260,13 +247,6 @@ export default function HomeContent({ jobs, totalJobs, helpers }: { jobs: Job[];
         tasks: t.tasks,
         reply: t.reply,
       }))
-
-  const catKeys = [
-    'cleaning', 'moving', 'tutoring', 'delivery', 'handyman', 'events', 'it', 'gardening',
-    'petcare', 'cooking', 'shopping', 'knitting', 'sewing', 'kidscare', 'carwash', 'painting',
-    'makeup', 'hairdresser', 'snowremoval', 'dogwalking', 'furnitureassembly', 'windowcleaning',
-    'photography', 'personaltraining', 'eldercare', 'musiclessons',
-  ] as const
 
   const HOW_STEPS = [
     {
@@ -321,7 +301,7 @@ export default function HomeContent({ jobs, totalJobs, helpers }: { jobs: Job[];
 
           <h1 className="text-4xl sm:text-6xl font-extrabold leading-tight tracking-tight text-gray-900 mb-4">
             {h.title1}{' '}
-            <span className="block" style={{ background: 'linear-gradient(90deg,#1E3A8A,#38BDF8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            <span className="block" style={{ background: 'var(--sl-gradient-hero-text)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
               {h.title2}
             </span>
           </h1>
@@ -331,7 +311,7 @@ export default function HomeContent({ jobs, totalJobs, helpers }: { jobs: Job[];
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-10">
             <Link href="/post"
               className="inline-flex items-center justify-center gap-2 rounded-2xl px-9 py-5 text-lg font-extrabold text-white transition-opacity hover:opacity-90"
-              style={{ background: 'linear-gradient(90deg,#2563EB,#38BDF8)', boxShadow: '0 8px 30px rgba(37,99,235,0.35)' }}>
+              style={{ background: 'var(--sl-gradient-primary)', boxShadow: 'var(--sl-shadow-primary)' }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
               {h.cta1.replace('🚀 ', '')}
             </Link>
@@ -342,55 +322,134 @@ export default function HomeContent({ jobs, totalJobs, helpers }: { jobs: Job[];
             </Link>
           </div>
 
-          {/* Trust pills */}
-          <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-sm text-gray-500">
-            {[`${totalJobs.toLocaleString()}+ ${h.stat1}`, h.stat2, h.stat3].map(s => (
-              <span key={s} className="flex items-center gap-2">
-                <span className="h-5 w-5 rounded-full bg-green-100 flex items-center justify-center">
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                </span>
-                {s}
-              </span>
+          {/* Social proof stats */}
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 mt-2">
+            {[
+              { num: '8,000+', label: 'tasks completed', color: '#16A34A', bg: '#F0FDF4' },
+              { num: '2,400+', label: 'verified helpers', color: '#2563EB', bg: '#EFF6FF' },
+              { num: '4.9★', label: 'average rating', color: '#D97706', bg: '#FFFBEB' },
+            ].map(s => (
+              <div key={s.label} className="flex items-center gap-2 rounded-full px-4 py-2 border"
+                style={{ background: s.bg, borderColor: s.bg }}>
+                <span className="text-base font-extrabold" style={{ color: s.color }}>{s.num}</span>
+                <span className="text-xs text-gray-500">{s.label}</span>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
+      {/* ── SKILLLINK GUARANTEE BAND ─────────────────────────────────────── */}
+      <section className="bg-linear-to-r from-green-600 to-emerald-500 px-6 py-5">
+        <div className="mx-auto max-w-5xl">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-12 text-white">
+            {[
+              { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>, title: 'SkillLink Guarantee', desc: 'Not happy? We make it right.' },
+              { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>, title: 'Secure Payments', desc: 'Pay safely through SkillLink.' },
+              { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>, title: 'Verified Helpers', desc: 'ID-checked locals you can trust.' },
+            ].map(item => (
+              <div key={item.title} className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">{item.icon}</div>
+                <div>
+                  <p className="font-extrabold text-sm leading-tight">{item.title}</p>
+                  <p className="text-xs text-white/80">{item.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── SEASONAL SPOTLIGHT ───────────────────────────────────────────── */}
+      <section className="px-6 py-10 max-w-6xl mx-auto w-full">
+        <div className="rounded-3xl border border-blue-100 bg-white px-6 py-7 shadow-sm">
+          <p className="text-xs font-extrabold uppercase tracking-widest text-blue-600 mb-2">{h.seasonalKicker}</p>
+          <h2 className="text-lg font-extrabold text-gray-900 mb-2">{seasonal.title}</h2>
+          <p className="text-sm text-gray-600 leading-relaxed">{seasonal.body}</p>
+        </div>
+      </section>
+
+      {/* ── TRUST MICROCOPY ─────────────────────────────────────────────── */}
+      <section className="px-6 pb-6 max-w-6xl mx-auto w-full">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <p className="text-xs text-gray-500 leading-relaxed bg-white border border-gray-200 rounded-2xl px-4 py-3">
+            {h.trustPricingNote}
+          </p>
+          <p className="text-xs text-gray-500 leading-relaxed bg-white border border-gray-200 rounded-2xl px-4 py-3">
+            {h.trustVerifiedNote}
+          </p>
+        </div>
+      </section>
+
       {/* ── CATEGORY BROWSE ───────────────────────────────────────────────── */}
       <section className="px-6 py-14 max-w-6xl mx-auto w-full">
-        <h2 className="text-xl font-extrabold text-gray-900 mb-2">{h.categoriesTitle}</h2>
-        <p className="text-sm text-gray-400 mb-8">Oslo · Bergen · Trondheim · Stavanger</p>
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
-          {catKeys.map(key => {
-            const cfg = CAT_ICONS[key]
-            const CatIcon = cfg.Icon
-            const catLabel = key === 'it' ? 'IT & Tech'
-              : key === 'petcare' ? 'Pet Care'
-              : key === 'kidscare' ? 'Kids Care'
-              : key === 'carwash' ? 'Car Wash'
-              : key === 'hairdresser' ? 'Hair Dresser'
-              : key === 'makeup' ? 'Makeup Artist'
-              : key === 'snowremoval' ? 'Snow Removal'
-              : key === 'dogwalking' ? 'Dog Walking'
-              : key === 'furnitureassembly' ? 'Furniture Assembly'
-              : key === 'windowcleaning' ? 'Window Cleaning'
-              : key === 'personaltraining' ? 'Personal Training'
-              : key === 'eldercare' ? 'Elder Care'
-              : key === 'musiclessons' ? 'Music Lessons'
-              : key.charAt(0).toUpperCase() + key.slice(1)
-            return (
-              <Link key={key} href={`/taskers?category=${encodeURIComponent(catLabel)}`}
-                className="group flex flex-col items-center gap-2.5 rounded-2xl bg-white border border-gray-200 px-3 py-4 hover:border-blue-400 hover:shadow-lg transition-all duration-200 text-center">
-                <div className="h-12 w-12 rounded-xl flex items-center justify-center shadow-sm" style={{ background: cfg.bg }}>
-                  <CatIcon size={24} color={cfg.fg} strokeWidth={1.75} />
-                </div>
-                <span className="text-xs font-bold text-gray-800 group-hover:text-blue-600 transition-colors leading-tight">
-                  {h.cat[key as keyof typeof h.cat]}
-                </span>
-              </Link>
-            )
-          })}
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6">
+          <div>
+            <h2 className="text-xl font-extrabold text-gray-900 mb-1">{h.categoriesTitle}</h2>
+            <p className="text-sm text-gray-400">Oslo · Bergen · Trondheim · Stavanger</p>
+          </div>
+          {/* Search */}
+          <div className="relative w-full sm:w-72">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            <input
+              type="text"
+              value={catSearch}
+              onChange={e => setCatSearch(e.target.value)}
+              placeholder="Search categories…"
+              className="w-full rounded-2xl border border-gray-200 bg-white pl-9 pr-8 py-2.5 text-sm text-gray-900
+                         focus:outline-none focus:border-blue-400 shadow-sm placeholder:text-gray-400"
+            />
+            {catSearch && (
+              <button onClick={() => setCatSearch('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                <X size={14} />
+              </button>
+            )}
+          </div>
         </div>
+
+        {/* Filter chips */}
+        <div className="flex flex-wrap gap-2 mb-8">
+          {CAT_FILTER_GROUPS.map(g => (
+            <button key={g.label} onClick={() => setCatFilter(g.label)}
+              className="rounded-full px-4 py-1.5 text-sm font-semibold transition-colors border"
+              style={catFilter === g.label
+                ? { background: 'var(--sl-gradient-brand)', color: '#fff', borderColor: 'transparent' }
+                : { background: '#fff', color: '#4B5563', borderColor: '#E5E7EB' }}>
+              {g.label}
+            </button>
+          ))}
+        </div>
+
+        {catKeys.length === 0 ? (
+          <div className="text-center py-10">
+            <p className="text-gray-400 text-sm">No categories match &quot;{catSearch}&quot;</p>
+            <button onClick={() => { setCatSearch(''); setCatFilter('All') }}
+              className="mt-3 text-sm font-semibold text-blue-600 hover:underline">
+              Show all
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+            {catKeys.map(key => {
+              const cfg = CATEGORY_BY_KEY[key]
+              if (!cfg) return null
+              const CatIcon = cfg.Icon
+              const label = CATEGORY_LABEL_BY_KEY[key] ?? (key.charAt(0).toUpperCase() + key.slice(1))
+              return (
+                <Link key={key} href={`/taskers?category=${encodeURIComponent(label)}`}
+                  className="group flex flex-col items-center gap-2.5 rounded-2xl bg-white border border-gray-200 px-3 py-4 hover:border-blue-400 hover:shadow-lg transition-all duration-200 text-center">
+                  <div className="h-12 w-12 rounded-xl flex items-center justify-center shadow-sm" style={{ background: cfg.bg }}>
+                    <CatIcon {...categoryIconProps(24, cfg.color)} />
+                  </div>
+                  <span className="text-xs font-bold text-gray-800 group-hover:text-blue-600 transition-colors leading-tight">
+                    {label}
+                  </span>
+                </Link>
+              )
+            })}
+          </div>
+        )}
       </section>
 
       {/* ── HOW IT WORKS ─────────────────────────────────────────────────── */}
@@ -416,6 +475,29 @@ export default function HomeContent({ jobs, totalJobs, helpers }: { jobs: Job[];
                 <p className="text-sm text-gray-500 leading-relaxed">{step.desc}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── HAPPINESS GUARANTEE ──────────────────────────────────────────── */}
+      <section className="px-6 py-12 max-w-5xl mx-auto w-full">
+        <div className="rounded-3xl border border-green-100 bg-green-50 px-8 py-10 flex flex-col sm:flex-row items-center gap-8">
+          <div className="h-20 w-20 rounded-2xl bg-green-100 flex items-center justify-center shrink-0 shadow-sm">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#15803D" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+          </div>
+          <div className="flex-1 text-center sm:text-left">
+            <h2 className="text-xl font-extrabold text-gray-900 mb-2">The SkillLink Happiness Guarantee</h2>
+            <p className="text-sm text-gray-600 leading-relaxed max-w-xl">
+              Every task is covered. If you&apos;re not satisfied with the work, contact us within 72 hours and we&apos;ll help make it right — at no extra cost to you. Our helpers are vetted, rated, and held to a high standard.
+            </p>
+            <div className="flex flex-wrap gap-4 mt-5 justify-center sm:justify-start">
+              {['ID-verified helpers', 'Secure payments', 'Dispute resolution', '72h satisfaction window'].map(item => (
+                <span key={item} className="inline-flex items-center gap-1.5 text-xs font-semibold text-green-700">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#15803D" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  {item}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -506,7 +588,7 @@ export default function HomeContent({ jobs, totalJobs, helpers }: { jobs: Job[];
       {/* ── FINAL CTA ────────────────────────────────────────────────────── */}
       <section className="px-6 pb-16 max-w-5xl mx-auto w-full">
         <div className="rounded-3xl px-8 py-16 text-center text-white relative overflow-hidden"
-          style={{ background: 'linear-gradient(135deg,#1E3A8A 0%,#2563EB 50%,#38BDF8 100%)' }}>
+          style={{ background: 'var(--sl-gradient-brand)' }}>
           <div className="absolute inset-0 opacity-10"
             style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
           <div className="relative z-10">

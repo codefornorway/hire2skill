@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Enable class-based dark mode for dark: utilities */
+@custom-variant dark (&:is(.dark, .dark *));
+
 @theme inline {
   --color-brand: #2563EB;
   --color-brand-dark: #1E3A8A;
@@ -13,14 +16,91 @@
   --font-mono: var(--font-geist-mono);
 }
 
-body {
-  background: #F9FAFB;
-  color: #111827;
-  font-family: var(--font-geist-sans), Arial, sans-serif;
+/* ── Light / Dark design tokens ──────────────────────────────────────────── */
+:root {
+  --sl-bg:          #F9FAFB;
+  --sl-bg-card:     #ffffff;
+  --sl-bg-subtle:   #F3F4F6;
+  --sl-bg-input:    #ffffff;
+  --sl-text-1:      #111827;
+  --sl-text-2:      #374151;
+  --sl-text-3:      #6B7280;
+  --sl-text-4:      #9CA3AF;
+  --sl-border:      #E5E7EB;
+  --sl-border-2:    #F3F4F6;
+  --sl-nav-bg:      #ffffff;
+  --sl-nav-border:  #E5E7EB;
+  --sl-shadow:      0 1px 3px rgba(0,0,0,0.08);
+  --sl-gradient-primary: linear-gradient(90deg, #2563eb, #38bdf8);
+  --sl-gradient-brand: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #38bdf8 100%);
+  --sl-gradient-hero-text: linear-gradient(90deg, #1e3a8a, #38bdf8);
+  --sl-shadow-primary: 0 8px 30px rgba(37, 99, 235, 0.35);
 }
 
+html.dark {
+  color-scheme: dark;
+  --sl-bg:          #0D1117;
+  --sl-bg-card:     #161B22;
+  --sl-bg-subtle:   #21262D;
+  --sl-bg-input:    #21262D;
+  --sl-text-1:      #F0F6FC;
+  --sl-text-2:      #C9D1D9;
+  --sl-text-3:      #8B949E;
+  --sl-text-4:      #6E7681;
+  --sl-border:      #30363D;
+  --sl-border-2:    #21262D;
+  --sl-nav-bg:      #161B22;
+  --sl-nav-border:  #30363D;
+  --sl-shadow:      0 1px 3px rgba(0,0,0,0.4);
+}
+
+body {
+  background: var(--sl-bg);
+  color: var(--sl-text-1);
+  font-family: var(--font-geist-sans), Arial, sans-serif;
+  transition: background 0.2s, color 0.2s;
+}
+
+/* ── Global dark overrides — target Tailwind utility classes ─────────────── */
+html.dark .bg-white       { background-color: var(--sl-bg-card) !important; }
+html.dark .bg-gray-50     { background-color: var(--sl-bg) !important; }
+html.dark .bg-gray-100    { background-color: var(--sl-bg-subtle) !important; }
+html.dark .bg-gray-200    { background-color: #30363D !important; }
+
+html.dark .border-gray-100 { border-color: var(--sl-border-2) !important; }
+html.dark .border-gray-200 { border-color: var(--sl-border) !important; }
+html.dark .border-gray-300 { border-color: #484F58 !important; }
+
+html.dark .text-gray-900  { color: var(--sl-text-1) !important; }
+html.dark .text-gray-800  { color: var(--sl-text-2) !important; }
+html.dark .text-gray-700  { color: var(--sl-text-2) !important; }
+html.dark .text-gray-600  { color: var(--sl-text-3) !important; }
+html.dark .text-gray-500  { color: var(--sl-text-3) !important; }
+html.dark .text-gray-400  { color: var(--sl-text-4) !important; }
+html.dark .text-gray-300  { color: #6E7681 !important; }
+
+/* Inputs */
+html.dark input,
+html.dark textarea,
+html.dark select {
+  background-color: var(--sl-bg-input) !important;
+  border-color: var(--sl-border) !important;
+  color: var(--sl-text-1) !important;
+}
+html.dark input::placeholder,
+html.dark textarea::placeholder { color: var(--sl-text-4) !important; }
+
+/* Dividers */
+html.dark .border-b,
+html.dark .border-t { border-color: var(--sl-border) !important; }
+
+/* Hover states */
+html.dark .hover\:bg-gray-50:hover   { background-color: var(--sl-bg-subtle) !important; }
+html.dark .hover\:bg-blue-50:hover   { background-color: rgba(37,99,235,0.12) !important; }
+html.dark .hover\:border-blue-300:hover { border-color: #3B82F6 !important; }
+
 .btn-primary {
-  background: linear-gradient(90deg, #2563EB, #38BDF8);
+  background: var(--sl-gradient-primary);
   color: white;
   font-weight: 600;
   border-radius: 10px;
