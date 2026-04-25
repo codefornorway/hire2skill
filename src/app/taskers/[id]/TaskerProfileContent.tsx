@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
@@ -79,6 +79,7 @@ function getTaskerProfileUi(locale: 'no' | 'en' | 'da' | 'sv') {
       done: 'Done',
       sendRequestTo: (name: string) => `Send request to ${name}`,
       needHelpWith: 'What do you need help with?',
+      requestTemplatesTitle: 'Quick templates',
       describeTaskFor: (name: string) => `Describe your task for ${name}...`,
       when: 'When?',
       budgetNok: 'Budget (NOK)',
@@ -120,6 +121,7 @@ function getTaskerProfileUi(locale: 'no' | 'en' | 'da' | 'sv') {
     done: 'Ferdig',
     sendRequestTo: (name: string) => `Send foresporsel til ${name}`,
     needHelpWith: 'Hva trenger du hjelp med?',
+    requestTemplatesTitle: 'Hurtigmaler',
     describeTaskFor: (name: string) => `Beskriv oppdraget ditt for ${name}...`,
     when: 'Nar?',
     budgetNok: 'Budsjett (NOK)',
@@ -127,6 +129,57 @@ function getTaskerProfileUi(locale: 'no' | 'en' | 'da' | 'sv') {
     sending: 'Sender...',
     profileVideoTitle: (name: string) => `${name} introduksjonsvideo`,
   }
+}
+
+function requestTemplatesForCategory(category: string, locale: 'no' | 'en' | 'da' | 'sv'): string[] {
+  const key = toCategoryKey(category)
+  if (locale === 'en') {
+    if (key === 'cleaning') {
+      return [
+        'Need regular home cleaning, 2-3 hours weekly. Can you start this week?',
+        'One-time deep cleaning for apartment before move-out. Are you available this weekend?',
+      ]
+    }
+    if (key === 'moving') {
+      return [
+        'Need help moving furniture between two addresses. Estimated 3 hours.',
+        'Looking for moving help with van access if possible. Are you available tomorrow?',
+      ]
+    }
+    if (key === 'handyman') {
+      return [
+        'Need help with minor repairs and wall mounting at home.',
+        'I have a few handyman tasks. Can you visit this week for 2-4 hours?',
+      ]
+    }
+    return [
+      'Hi! I need help with this task. Are you available this week?',
+      'Can you share your availability and estimated price for this task?',
+    ]
+  }
+
+  if (key === 'cleaning') {
+    return [
+      'Trenger ukentlig rengjoring hjemme, ca. 2-3 timer. Kan du starte denne uken?',
+      'Trenger engangs grundig vask for leilighet. Har du tid i helgen?',
+    ]
+  }
+  if (key === 'moving') {
+    return [
+      'Trenger hjelp til flytting mellom to adresser. Estimert 3 timer.',
+      'Ser etter flyttehjelp sa snart som mulig. Er du ledig i morgen?',
+    ]
+  }
+  if (key === 'handyman') {
+    return [
+      'Trenger hjelp med sma reparasjoner og montering hjemme.',
+      'Jeg har flere sma oppgaver. Kan du komme denne uken i 2-4 timer?',
+    ]
+  }
+  return [
+    'Hei! Jeg trenger hjelp med denne oppgaven. Er du ledig denne uken?',
+    'Kan du dele tilgjengelighet og estimert pris for oppgaven?',
+  ]
 }
 
 function Stars({ rating, size = 16 }: { rating: number; size?: number }) {
@@ -198,6 +251,10 @@ export default function TaskerProfileContent({
           : ui.respondsFewHours,
   }
   const totalReviews = reviews.length
+  const requestTemplates = useMemo(() => {
+    const baseCategory = tasker.categories[0] ?? ''
+    return requestTemplatesForCategory(baseCategory, locale)
+  }, [tasker.categories, locale])
 
   function askDuplicateConfirm(messageText: string) {
     setConfirmDuplicateMessage(messageText)
@@ -631,6 +688,20 @@ export default function TaskerProfileContent({
                 <form onSubmit={handleSendRequest} className="space-y-4">
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1.5">{ui.needHelpWith}</label>
+                    <div className="mb-2 flex flex-wrap items-center gap-2">
+                      <span className="text-[11px] font-semibold text-gray-500">{ui.requestTemplatesTitle}:</span>
+                      {requestTemplates.map((tpl) => (
+                        <button
+                          key={tpl}
+                          type="button"
+                          onClick={() => setMessage(tpl)}
+                          title={tpl}
+                          className="max-w-full truncate rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700 hover:bg-blue-100"
+                        >
+                          {tpl}
+                        </button>
+                      ))}
+                    </div>
                     <textarea
                       required
                       rows={4}

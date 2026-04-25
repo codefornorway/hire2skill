@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
@@ -13,7 +13,7 @@ function resolveNextPath(raw: string | null): string | null {
   return raw
 }
 
-export default function SignupPage() {
+function SignupPageContent() {
   const { t } = useLanguage()
   const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
@@ -107,5 +107,13 @@ export default function SignupPage() {
         </p>
       </div>
     </div>
+  )
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={<div className="flex flex-1 items-center justify-center bg-gray-50 px-4 py-10" />}>
+      <SignupPageContent />
+    </Suspense>
   )
 }
