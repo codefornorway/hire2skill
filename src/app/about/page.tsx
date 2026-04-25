@@ -1,7 +1,6 @@
-import type { Metadata } from 'next'
 import Link from 'next/link'
 
-export const metadata: Metadata = {
+export const metadata = {
   title: 'About Hire2Skill',
   description: 'Hire2Skill connects people with trusted local helpers across Norway. Learn about our mission, story, and values.',
 }

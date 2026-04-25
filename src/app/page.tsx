@@ -1,10 +1,9 @@
-import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import HomeContent from './HomeContent'
 import JsonLd from '@/components/JsonLd'
 import { FEATURES } from '@/lib/features'
 
-export const metadata: Metadata = {
+export const metadata = {
   title: 'Hire2Skill — Find Local Helpers in Norway',
   description: 'Book verified local helpers for cleaning, moving, tutoring, handyman work and more. Serving Oslo, Bergen, Trondheim, Stavanger and across Norway.',
   openGraph: {

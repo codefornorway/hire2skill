@@ -1,10 +1,9 @@
-import type { Metadata } from 'next'
 import Link from 'next/link'
 import {
   TrendingUp, PenLine, SprayCan, Truck, BarChart3, ShieldCheck,
 } from 'lucide-react'
 
-export const metadata: Metadata = {
+export const metadata = {
   title: 'Blog',
   description: 'Tips, guides, and news from the Hire2Skill team. Get more from your helpers and grow your earnings as a tasker.',
 }

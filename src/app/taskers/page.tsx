@@ -1,4 +1,3 @@
-import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import TaskersContent from './TaskersContent'
@@ -38,7 +37,7 @@ function taskersMetaByLocale(locale: 'no' | 'da' | 'sv' | 'en') {
   }
 }
 
-export async function generateMetadata(): Promise<Metadata> {
+export async function generateMetadata() {
   const headerStore = await headers()
   const locale = resolveMetaLocale(headerStore.get('accept-language'))
   const copy = taskersMetaByLocale(locale)
@@ -81,7 +80,6 @@ export default async function TaskersPage({ searchParams }: { searchParams: Prom
     .from('profiles')
     .select('id, display_name, bio, hourly_rate, categories, location, verified, tasks_done, rating, avg_rating, review_count, response_hours, avatar_url, languages, brings_tools, can_invoice')
     .eq('role', 'helper')
-    .not('display_name', 'is', null)
     .order('tasks_done', { ascending: false })
     .limit(100)
 
@@ -140,7 +138,25 @@ export default async function TaskersPage({ searchParams }: { searchParams: Prom
 
   const hasRealData = mergedProfiles.length > 0
   const taskers = hasRealData
-    ? mergedProfiles.map(p => ({ ...p, rating: (p.avg_rating ?? p.rating ?? 0) }))
+    ? mergedProfiles
+        .filter(p => (p.categories?.length ?? 0) > 0)
+        .map(p => ({
+          ...p,
+          display_name: p.display_name?.trim() || 'Helper',
+          bio: p.bio?.trim() || 'Ready to help with local jobs and services.',
+          hourly_rate: p.hourly_rate ?? 0,
+          categories: p.categories ?? [],
+          location: p.location?.trim() || 'Norway',
+          verified: Boolean(p.verified),
+          tasks_done: p.tasks_done ?? 0,
+          rating: (p.avg_rating ?? p.rating ?? 0),
+          review_count: p.review_count ?? 0,
+          response_hours: p.response_hours ?? 24,
+          avatar_url: p.avatar_url ?? null,
+          languages: p.languages ?? [],
+          brings_tools: Boolean(p.brings_tools),
+          can_invoice: Boolean(p.can_invoice),
+        }))
     : (FEATURES.enableDemoData ? SAMPLE_TASKERS : [])
 
   return <TaskersContent taskers={taskers} activeCategory={category ?? null} />

@@ -32,14 +32,14 @@ export type BookingItem = {
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ posted?: string }>
+  searchParams: Promise<{ posted?: string; requestSent?: string }>
 }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) redirect('/login')
 
-  const { posted } = await searchParams
+  const { posted, requestSent } = await searchParams
 
   const [{ count: postCount }, { data: recentPosts }, { data: profile }] = await Promise.all([
     supabase.from('posts').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
@@ -56,12 +56,31 @@ export default async function DashboardPage({
     if (role === 'helper') {
       const { data: raw } = await supabase
         .from('bookings')
-        .select('id, created_at, status, message, post_id, scheduled_date, budget, poster_id, helper_id')
+        .select('*')
         .eq('helper_id', user.id)
         .order('created_at', { ascending: false })
         .limit(30)
 
       if (raw && raw.length > 0) {
+        // Always keep base bookings visible, even if enrichment queries fail.
+        bookings = raw.map((b: any) => ({
+          id: b.id,
+          created_at: b.created_at,
+          status: b.status,
+          message: b.message ?? '',
+          post_id: b.post_id ?? null,
+          post_title: null,
+          post_category: null,
+          post_location: null,
+          scheduled_date: b.scheduled_date ?? null,
+          budget: b.budget ?? null,
+          poster_id: b.poster_id,
+          helper_id: b.helper_id,
+          other_display_name: null,
+          other_avatar_url: null,
+          has_review: false,
+        }))
+
         const ids = [...new Set(raw.map(b => b.poster_id))]
         const postIds = [...new Set(raw.map(b => b.post_id).filter(Boolean) as string[])]
         const { data: profiles } = await supabase
@@ -71,11 +90,19 @@ export default async function DashboardPage({
           : { data: [] as { id: string; title: string | null; category: string | null; location: string | null }[] }
         const map = Object.fromEntries((profiles ?? []).map(p => [p.id, p]))
         const postMap = Object.fromEntries((posts ?? []).map(p => [p.id, p]))
-        bookings = raw.map(b => ({
-          ...b,
+        bookings = bookings.map((b) => ({
+          id: b.id,
+          created_at: b.created_at,
+          status: b.status,
+          message: b.message ?? '',
+          post_id: b.post_id ?? null,
           post_title: b.post_id ? postMap[b.post_id]?.title ?? null : null,
           post_category: b.post_id ? postMap[b.post_id]?.category ?? null : null,
           post_location: b.post_id ? postMap[b.post_id]?.location ?? null : null,
+          scheduled_date: b.scheduled_date ?? null,
+          budget: b.budget ?? null,
+          poster_id: b.poster_id,
+          helper_id: b.helper_id,
           other_display_name: map[b.poster_id]?.display_name ?? null,
           other_avatar_url: map[b.poster_id]?.avatar_url ?? null,
           has_review: false,
@@ -84,12 +111,31 @@ export default async function DashboardPage({
     } else {
       const { data: raw } = await supabase
         .from('bookings')
-        .select('id, created_at, status, message, post_id, scheduled_date, budget, poster_id, helper_id')
+        .select('*')
         .eq('poster_id', user.id)
         .order('created_at', { ascending: false })
         .limit(30)
 
       if (raw && raw.length > 0) {
+        // Always keep base bookings visible, even if enrichment queries fail.
+        bookings = raw.map((b: any) => ({
+          id: b.id,
+          created_at: b.created_at,
+          status: b.status,
+          message: b.message ?? '',
+          post_id: b.post_id ?? null,
+          post_title: null,
+          post_category: null,
+          post_location: null,
+          scheduled_date: b.scheduled_date ?? null,
+          budget: b.budget ?? null,
+          poster_id: b.poster_id,
+          helper_id: b.helper_id,
+          other_display_name: null,
+          other_avatar_url: null,
+          has_review: false,
+        }))
+
         const ids = [...new Set(raw.map(b => b.helper_id))]
         const postIds = [...new Set(raw.map(b => b.post_id).filter(Boolean) as string[])]
         const { data: profiles } = await supabase
@@ -99,11 +145,19 @@ export default async function DashboardPage({
           : { data: [] as { id: string; title: string | null; category: string | null; location: string | null }[] }
         const map = Object.fromEntries((profiles ?? []).map(p => [p.id, p]))
         const postMap = Object.fromEntries((posts ?? []).map(p => [p.id, p]))
-        bookings = raw.map(b => ({
-          ...b,
+        bookings = bookings.map((b) => ({
+          id: b.id,
+          created_at: b.created_at,
+          status: b.status,
+          message: b.message ?? '',
+          post_id: b.post_id ?? null,
           post_title: b.post_id ? postMap[b.post_id]?.title ?? null : null,
           post_category: b.post_id ? postMap[b.post_id]?.category ?? null : null,
           post_location: b.post_id ? postMap[b.post_id]?.location ?? null : null,
+          scheduled_date: b.scheduled_date ?? null,
+          budget: b.budget ?? null,
+          poster_id: b.poster_id,
+          helper_id: b.helper_id,
           other_display_name: map[b.helper_id]?.display_name ?? null,
           other_avatar_url: map[b.helper_id]?.avatar_url ?? null,
           has_review: false,
@@ -136,6 +190,7 @@ export default async function DashboardPage({
       postCount={postCount ?? 0}
       recentPosts={recentPosts ?? []}
       posted={posted === '1'}
+      requestSent={requestSent === '1'}
       role={role}
       bookings={bookings}
       pendingCount={pendingCount}

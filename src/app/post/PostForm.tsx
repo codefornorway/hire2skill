@@ -9,6 +9,8 @@ import { CATEGORY_LABELS, CATEGORY_BY_KEY, toCategoryKey } from '@/lib/categorie
 import { categoryIconProps } from '@/lib/category-icon'
 import { useLanguage } from '@/context/LanguageContext'
 import { formatDateByLocale } from '@/lib/i18n/date'
+import { postNotify } from '@/lib/client-notify'
+import ConfirmActionModal from '@/components/ConfirmActionModal'
 
 const CATEGORIES: { key: string; bg: string; color: string; Icon: React.ElementType }[] = CATEGORY_LABELS
   .map((label) => {
@@ -693,8 +695,11 @@ export default function PostForm() {
   const [locSuggestions, setLocSuggestions] = useState<string[]>([])
   const [showLocSuggestions, setShowLocSuggestions] = useState(false)
   const [locSearching, setLocSearching] = useState(false)
+  const [confirmDuplicateOpen, setConfirmDuplicateOpen] = useState(false)
+  const [confirmDuplicateMessage, setConfirmDuplicateMessage] = useState('')
   const locRef = useRef<HTMLDivElement>(null)
   const locAbortRef = useRef<AbortController | null>(null)
+  const confirmResolverRef = useRef<((value: boolean) => void) | null>(null)
   const localizedScopingQuestions = useMemo(() => {
     return Object.fromEntries(
       Object.entries(SCOPING_QUESTIONS).map(([cat, questions]) => [
@@ -724,7 +729,6 @@ export default function PostForm() {
       .from('profiles')
       .select('id, display_name, avatar_url, categories, location, hourly_rate')
       .eq('role', 'helper')
-      .not('display_name', 'is', null)
       .order('created_at', { ascending: false })
       .limit(24)
       .then(({ data }) => {
@@ -798,6 +802,21 @@ export default function PostForm() {
     return () => window.clearTimeout(timeout)
   }, [locale, location])
 
+  function askDuplicateConfirm(messageText: string) {
+    setConfirmDuplicateMessage(messageText)
+    setConfirmDuplicateOpen(true)
+    return new Promise<boolean>((resolve) => {
+      confirmResolverRef.current = resolve
+    })
+  }
+
+  function resolveDuplicateConfirm(confirmed: boolean) {
+    setConfirmDuplicateOpen(false)
+    const resolve = confirmResolverRef.current
+    confirmResolverRef.current = null
+    resolve?.(confirmed)
+  }
+
   function handleLocChange(val: string) {
     setLocation(val)
     if (errors.location) setErrors(prev => ({ ...prev, location: '' }))
@@ -858,16 +877,60 @@ export default function PostForm() {
       return
     }
 
+    let requestSent = false
     if (selectedHelper && isUuid(selectedHelper.id)) {
-      await supabase.from('bookings').insert({
+      const { count: existingPending } = await supabase
+        .from('bookings')
+        .select('*', { count: 'exact', head: true })
+        .eq('poster_id', user.id)
+        .eq('helper_id', selectedHelper.id)
+        .eq('status', 'pending')
+
+      if ((existingPending ?? 0) > 0) {
+        const helperName = selectedHelper.name || ui.helperDefault
+        setSubmitting(false)
+        const shouldSendAnother = await askDuplicateConfirm(
+          t.dashboard.confirmSendAnotherRequest?.(helperName) ??
+            `You already have a pending request with ${helperName}. Do you want to send another request?`,
+        )
+        if (!shouldSendAnother) {
+          router.push('/dashboard?posted=1')
+          return
+        }
+        setSubmitting(true)
+      }
+
+      const { data: booking } = await supabase.from('bookings').insert({
         post_id: post.id,
         poster_id: user.id,
         helper_id: selectedHelper.id,
+        message: fullDescription || description.trim() || title.trim(),
         status: 'pending',
-      })
+      }).select('id').single()
+      requestSent = Boolean(booking?.id)
+
+      // Seed chat with initial request text so helper immediately sees the request context.
+      if (booking?.id) {
+        try {
+          await supabase.from('messages').insert({
+            booking_id: booking.id,
+            sender_id: user.id,
+            body: fullDescription || description.trim() || title.trim(),
+          })
+        } catch {
+          // messages table may not exist in some setups; booking still succeeds.
+        }
+
+        // Trigger email/push notification for helper.
+        void postNotify({
+          type: 'new-booking',
+          bookingId: booking.id,
+          bookingData: { helper_id: selectedHelper.id, poster_id: user.id },
+        })
+      }
     }
 
-    router.push('/dashboard?posted=1')
+    router.push(`/dashboard?posted=1${requestSent ? '&requestSent=1' : ''}`)
   }
 
   const selectedCat = CATEGORIES.find(c => c.key === category)
@@ -1181,6 +1244,15 @@ export default function PostForm() {
   const cat4 = selectedCat!
   return (
     <div>
+      <ConfirmActionModal
+        open={confirmDuplicateOpen}
+        title={t.dashboard.actionConfirm ?? 'Confirm'}
+        body={confirmDuplicateMessage}
+        cancelLabel={t.dashboard.actionCancel ?? 'Cancel'}
+        confirmLabel={t.dashboard.actionConfirm ?? 'Confirm'}
+        onCancel={() => resolveDuplicateConfirm(false)}
+        onConfirm={() => resolveDuplicateConfirm(true)}
+      />
       <ProgressBar step={4} labels={ui.steps} />
       <div className="max-w-5xl mx-auto px-6 py-10">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

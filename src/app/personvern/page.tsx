@@ -1,7 +1,6 @@
-import type { Metadata } from 'next'
 import Link from 'next/link'
 
-export const metadata: Metadata = {
+export const metadata = {
   title: 'Personvern',
   description: 'Hire2Skill personvern — kort norsk oversikt med lenke til full personvernerklæring.',
 }

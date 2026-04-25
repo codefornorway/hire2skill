@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
@@ -55,6 +55,17 @@ type Review = {
 }
 
 type RoleType = 'poster' | 'helper'
+
+function sorted(arr: string[] | null | undefined) {
+  return [...(arr ?? [])].sort()
+}
+
+function sameStringArray(a: string[] | null | undefined, b: string[] | null | undefined) {
+  const aa = sorted(a)
+  const bb = sorted(b)
+  if (aa.length !== bb.length) return false
+  return aa.every((value, i) => value === bb[i])
+}
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -134,21 +145,68 @@ function SectionTitle({ title, sub }: { title: string; sub?: string }) {
 }
 
 function SaveBar({
-  saving, saved, onSave, onCancel,
-}: { saving: boolean; saved: boolean; onSave: () => void; onCancel: () => void }) {
+  saving, saved, disabled, saveLabel, savingLabel, savedLabel, cancelLabel, onSave, onCancel,
+}: {
+  saving: boolean
+  saved: boolean
+  disabled?: boolean
+  saveLabel: string
+  savingLabel: string
+  savedLabel: string
+  cancelLabel: string
+  onSave: () => void
+  onCancel: () => void
+}) {
   return (
     <div className="flex items-center gap-3 pt-6 border-t border-gray-100 mt-6">
       <button onClick={onCancel}
         className="px-5 py-2.5 rounded-xl border-2 border-gray-200 text-sm font-bold text-gray-600 hover:border-gray-300 transition-colors">
-        Cancel
+        {cancelLabel}
       </button>
-      <button onClick={onSave} disabled={saving}
-        className="px-6 py-2.5 rounded-xl text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+      <button onClick={onSave} disabled={saving || disabled}
+        className="px-6 py-2.5 rounded-xl text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
         style={{ background: 'linear-gradient(90deg,#2563EB,#38BDF8)' }}>
-        {saving ? 'Saving…' : saved ? 'Saved ✓' : 'Save'}
+        {saving ? savingLabel : saved ? savedLabel : saveLabel}
       </button>
     </div>
   )
+}
+
+function getProfileSaveUi(locale: 'no' | 'en' | 'da' | 'sv') {
+  switch (locale) {
+    case 'no':
+      return {
+        save: 'Lagre',
+        saving: 'Lagrer…',
+        saved: 'Lagret ✓',
+        cancel: 'Avbryt',
+        noChanges: 'Ingen endringer å lagre ennå.',
+      }
+    case 'da':
+      return {
+        save: 'Gem',
+        saving: 'Gemmer…',
+        saved: 'Gemt ✓',
+        cancel: 'Annuller',
+        noChanges: 'Ingen ændringer at gemme endnu.',
+      }
+    case 'sv':
+      return {
+        save: 'Spara',
+        saving: 'Sparar…',
+        saved: 'Sparat ✓',
+        cancel: 'Avbryt',
+        noChanges: 'Inga ändringar att spara ännu.',
+      }
+    default:
+      return {
+        save: 'Save',
+        saving: 'Saving…',
+        saved: 'Saved successfully ✓',
+        cancel: 'Cancel',
+        noChanges: 'No changes to save yet.',
+      }
+  }
 }
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
@@ -501,6 +559,7 @@ export default function ProfileContent({
   reviews: Review[]
 }) {
   const { locale } = useLanguage()
+  const saveUi = useMemo(() => getProfileSaveUi(locale), [locale])
   const router = useRouter()
   const [tab, setTab] = useState('profile')
 
@@ -570,6 +629,21 @@ export default function ProfileContent({
     .split(' ').slice(0, 2).map((w: string) => w[0]?.toUpperCase() ?? '').join('') ||
     user.email[0]?.toUpperCase()
   const avatarColor = AVATAR_COLORS[user.id.charCodeAt(user.id.length - 1) % AVATAR_COLORS.length]
+  const isProfDirty = useMemo(() => {
+    return (
+      role !== ((init?.role as RoleType) ?? 'poster') ||
+      name !== (init?.display_name ?? '') ||
+      bio !== (init?.bio ?? '') ||
+      location !== (init?.location ?? '') ||
+      rate !== String(init?.hourly_rate ?? '') ||
+      videoUrl !== (init?.video_intro_url ?? '') ||
+      avatar !== (init?.avatar_url ?? null) ||
+      bringsTools !== Boolean(init?.brings_tools) ||
+      canInvoice !== Boolean(init?.can_invoice) ||
+      !sameStringArray(cats, init?.categories ?? []) ||
+      !sameStringArray(helperLanguages, init?.languages ?? [])
+    )
+  }, [avatar, bio, bringsTools, canInvoice, cats, helperLanguages, init?.avatar_url, init?.bio, init?.brings_tools, init?.can_invoice, init?.categories, init?.display_name, init?.hourly_rate, init?.languages, init?.location, init?.role, init?.video_intro_url, location, name, rate, role, videoUrl])
 
   // ── Effects ──────────────────────────────────────────────────────────────────
 
@@ -581,6 +655,10 @@ export default function ProfileContent({
     document.addEventListener('mousedown', onMouseDown)
     return () => document.removeEventListener('mousedown', onMouseDown)
   }, [])
+
+  useEffect(() => {
+    if (isProfDirty && profSaved) setProfSaved(false)
+  }, [isProfDirty, profSaved])
 
   function handleLocationChange(val: string) {
     setLocation(val)
@@ -625,6 +703,7 @@ export default function ProfileContent({
       return
     }
     setProfSaved(true)
+    router.refresh()
     setTimeout(() => setProfSaved(false), 3000)
   }
 
@@ -919,7 +998,15 @@ export default function ProfileContent({
                   )}
                 </div>
 
-                <SaveBar saving={profSaving} saved={profSaved} onSave={saveProfile}
+                <SaveBar
+                  saving={profSaving}
+                  saved={profSaved}
+                  disabled={!isProfDirty}
+                  saveLabel={saveUi.save}
+                  savingLabel={saveUi.saving}
+                  savedLabel={saveUi.saved}
+                  cancelLabel={saveUi.cancel}
+                  onSave={saveProfile}
                   onCancel={() => {
                     setName(init?.display_name ?? ''); setBio(init?.bio ?? '')
                     setLocation(init?.location ?? ''); setRate(String(init?.hourly_rate ?? ''))
@@ -931,6 +1018,9 @@ export default function ProfileContent({
                     setAvatarErr('')
                     setProfileErr('')
                   }} />
+                {!isProfDirty && (
+                  <p className="mt-2 text-xs text-gray-400">{saveUi.noChanges}</p>
+                )}
 
                 {/* ── Reviews received ── */}
                 <div className="mt-10 pt-8 border-t border-gray-100">
@@ -1003,7 +1093,14 @@ export default function ProfileContent({
                     </p>
                   )}
                 </div>
-                <SaveBar saving={pwSaving} saved={pwSaved} onSave={savePassword}
+                <SaveBar
+                  saving={pwSaving}
+                  saved={pwSaved}
+                  saveLabel={saveUi.save}
+                  savingLabel={saveUi.saving}
+                  savedLabel={saveUi.saved}
+                  cancelLabel={saveUi.cancel}
+                  onSave={savePassword}
                   onCancel={() => { setCurPw(''); setNewPw(''); setConfPw(''); setPwErr('') }} />
               </div>
             )}
@@ -1120,7 +1217,14 @@ export default function ProfileContent({
                   </table>
                 </div>
 
-                <SaveBar saving={notifSaving} saved={notifSaved} onSave={saveNotifications}
+                <SaveBar
+                  saving={notifSaving}
+                  saved={notifSaved}
+                  saveLabel={saveUi.save}
+                  savingLabel={saveUi.saving}
+                  savedLabel={saveUi.saved}
+                  cancelLabel={saveUi.cancel}
+                  onSave={saveNotifications}
                   onCancel={() => setNotif(init?.notifications ?? DEFAULT_NOTIF)} />
               </div>
             )}
@@ -1217,7 +1321,14 @@ export default function ProfileContent({
                       className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition resize-none" />
                   </div>
                 </div>
-                <SaveBar saving={bizSaving} saved={bizSaved} onSave={saveBusiness}
+                <SaveBar
+                  saving={bizSaving}
+                  saved={bizSaved}
+                  saveLabel={saveUi.save}
+                  savingLabel={saveUi.saving}
+                  savedLabel={saveUi.saved}
+                  cancelLabel={saveUi.cancel}
+                  onSave={saveBusiness}
                   onCancel={() => { setBizName(init?.business_name ?? ''); setBizWeb(init?.business_website ?? ''); setBizDesc(init?.business_description ?? '') }} />
               </div>
             )}

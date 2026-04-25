@@ -1,7 +1,6 @@
-import type { Metadata } from 'next'
 import ServicesContent from './ServicesContent'
 
-export const metadata: Metadata = {
+export const metadata = {
   title: 'All Services',
   description: 'Browse all services available on Hire2Skill — cleaning, moving, tutoring, handyman, pet care, and 50 more categories across Norway.',
 }

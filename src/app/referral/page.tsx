@@ -1,9 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import ReferralContent from './ReferralContent'
-import type { Metadata } from 'next'
 
-export const metadata: Metadata = {
+export const metadata = {
   title: 'Refer a friend — Hire2Skill',
   description: 'Invite friends to Hire2Skill and earn 100 NOK credit for every friend who completes their first booking.',
 }

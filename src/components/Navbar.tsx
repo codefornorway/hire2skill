@@ -3,6 +3,8 @@ import Link from 'next/link'
 import { LogoHorizontal } from './SkillLinkLogo'
 import LanguageSwitcher from './LanguageSwitcher'
 import ThemeToggle from './ThemeToggle'
+import LogoutButton from './LogoutButton'
+import RequestBell from './RequestBell'
 
 export default async function Navbar() {
   const supabase = await createClient()
@@ -11,12 +13,13 @@ export default async function Navbar() {
   let unreadCount = 0
   if (user) {
     try {
-      // Only count messages from accepted bookings — matches what the chat page shows
+      // Count messages from active conversations (pending/accepted/completed),
+      // so pending request chats also surface unread badges in the navbar.
       const { data: acceptedBookings } = await supabase
         .from('bookings')
         .select('id')
         .or(`helper_id.eq.${user.id},poster_id.eq.${user.id}`)
-        .eq('status', 'accepted')
+        .in('status', ['pending', 'accepted', 'completed'])
 
       const bookingIds = (acceptedBookings ?? []).map(b => b.id)
 
@@ -64,14 +67,11 @@ export default async function Navbar() {
               <Link href="/profile" className="hidden sm:block text-sm font-medium text-gray-500 hover:text-blue-600 transition-colors">
                 Profile
               </Link>
+              <RequestBell userId={user.id} />
               <div className="hidden sm:flex h-9 w-9 items-center justify-center rounded-full text-white text-sm font-bold shadow-sm" style={{ background: 'linear-gradient(135deg,#1E3A8A,#38BDF8)' }}>
                 {user.email?.[0].toUpperCase()}
               </div>
-                  <form action="/auth/signout" method="post">
-                <button type="submit" className="hidden sm:block rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
-                  Log out
-                </button>
-              </form>
+              <LogoutButton />
             </>
           ) : (
             <>

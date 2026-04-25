@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import React, { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useLanguage } from '@/context/LanguageContext'
 import { createClient } from '@/lib/supabase/client'
 import { logClientEvent } from '@/lib/telemetry'
@@ -15,6 +16,7 @@ type Props = {
   postCount: number
   recentPosts: Post[]
   posted: boolean
+  requestSent: boolean
   role: 'helper' | 'poster' | null
   bookings: BookingItem[]
   pendingCount: number
@@ -641,7 +643,8 @@ const ClipboardIcon = (
   </svg>
 )
 
-export default function DashboardContent({ email, postCount, recentPosts, posted, role, bookings: initialBookings, currentUserId }: Props) {
+export default function DashboardContent({ email, postCount, recentPosts, posted, requestSent, role, bookings: initialBookings, currentUserId }: Props) {
+  const router = useRouter()
   const { t, locale } = useLanguage()
   const d = t.dashboard
   const firstName = email.split('@')[0]
@@ -654,6 +657,10 @@ export default function DashboardContent({ email, postCount, recentPosts, posted
   const [rescheduleTarget, setRescheduleTarget] = useState<BookingItem | null>(null)
   const [userCoords, setUserCoords] = useState<{ lat: number; lon: number } | null>(null)
   const [distanceByLocation, setDistanceByLocation] = useState<Record<string, number>>({})
+
+  useEffect(() => {
+    setBookings(initialBookings)
+  }, [initialBookings])
 
   function handleTabChange(tab: 'overview' | 'tasks') {
     setActiveTab(tab)
@@ -733,6 +740,28 @@ export default function DashboardContent({ email, postCount, recentPosts, posted
     }
   }, [bookings, distanceByLocation, userCoords])
 
+  // Keep helper/poster request lists fresh without manual reload.
+  useEffect(() => {
+    if (!role || !currentUserId) return
+    const supabase = createClient()
+    const filter = role === 'helper'
+      ? `helper_id=eq.${currentUserId}`
+      : `poster_id=eq.${currentUserId}`
+    const channel = supabase
+      .channel(`dashboard-bookings-${role}-${currentUserId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'bookings', filter },
+        () => {
+          router.refresh()
+        },
+      )
+      .subscribe()
+    return () => {
+      void supabase.removeChannel(channel)
+    }
+  }, [currentUserId, role, router])
+
   return (
     <main className="mx-auto max-w-5xl px-6 py-8 w-full">
       {reviewTarget && (
@@ -755,6 +784,12 @@ export default function DashboardContent({ email, postCount, recentPosts, posted
         <div className="mb-6 rounded-xl bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700 flex items-center gap-2">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
           {t.dashboard.posted}
+        </div>
+      )}
+      {requestSent && (
+        <div className="mb-6 rounded-xl bg-blue-50 border border-blue-200 px-4 py-3 text-sm text-blue-700 flex items-center gap-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          {t.dashboard.requestSent}
         </div>
       )}
 

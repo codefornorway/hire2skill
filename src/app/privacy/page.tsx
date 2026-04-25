@@ -1,6 +1,4 @@
-import type { Metadata } from 'next'
-
-export const metadata: Metadata = {
+export const metadata = {
   title: 'Privacy Policy',
   description: 'Hire2Skill Privacy Policy — how we collect, use, and protect your personal data under GDPR.',
 }

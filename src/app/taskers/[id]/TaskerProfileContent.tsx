@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
@@ -11,6 +11,7 @@ import { logClientEvent } from '@/lib/telemetry'
 import { postNotify } from '@/lib/client-notify'
 import { CATEGORY_BY_KEY, toCategoryKey } from '@/lib/categories'
 import { categoryIconProps } from '@/lib/category-icon'
+import ConfirmActionModal from '@/components/ConfirmActionModal'
 
 type Tasker = {
   id: string
@@ -179,6 +180,9 @@ export default function TaskerProfileContent({
   const [sending, setSending] = useState(false)
   const [reqError, setReqError] = useState('')
   const [notifyWarn, setNotifyWarn] = useState<string | null>(null)
+  const [confirmDuplicateOpen, setConfirmDuplicateOpen] = useState(false)
+  const [confirmDuplicateMessage, setConfirmDuplicateMessage] = useState('')
+  const confirmResolverRef = useRef<((value: boolean) => void) | null>(null)
 
   const initials = tasker.display_name.split(' ').slice(0, 2).map(w => w[0]?.toUpperCase() ?? '').join('')
   const avatarColor = AVATAR_COLORS[tasker.id.charCodeAt(tasker.id.length - 1) % AVATAR_COLORS.length]
@@ -194,6 +198,21 @@ export default function TaskerProfileContent({
           : ui.respondsFewHours,
   }
   const totalReviews = reviews.length
+
+  function askDuplicateConfirm(messageText: string) {
+    setConfirmDuplicateMessage(messageText)
+    setConfirmDuplicateOpen(true)
+    return new Promise<boolean>((resolve) => {
+      confirmResolverRef.current = resolve
+    })
+  }
+
+  function resolveDuplicateConfirm(confirmed: boolean) {
+    setConfirmDuplicateOpen(false)
+    const resolve = confirmResolverRef.current
+    confirmResolverRef.current = null
+    resolve?.(confirmed)
+  }
 
   async function handleSendRequest(e: React.FormEvent) {
     e.preventDefault()
@@ -215,6 +234,25 @@ export default function TaskerProfileContent({
       setDemoRequestSimulated(true)
       setNotifyWarn(null)
       return
+    }
+
+    const { count: existingPending } = await supabase
+      .from('bookings')
+      .select('*', { count: 'exact', head: true })
+      .eq('poster_id', user.id)
+      .eq('helper_id', tasker.id)
+      .eq('status', 'pending')
+
+    if ((existingPending ?? 0) > 0) {
+      setSending(false)
+      const shouldSendAnother = await askDuplicateConfirm(
+        d.confirmSendAnotherRequest?.(tasker.display_name) ??
+          `You already have a pending request with ${tasker.display_name}. Do you want to send another request?`,
+      )
+      if (!shouldSendAnother) {
+        return
+      }
+      setSending(true)
     }
 
     const { data: inserted, error } = await supabase.from('bookings').insert({
@@ -251,6 +289,15 @@ export default function TaskerProfileContent({
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <ConfirmActionModal
+        open={confirmDuplicateOpen}
+        title={d.actionConfirm ?? 'Confirm'}
+        body={confirmDuplicateMessage}
+        cancelLabel={d.actionCancel ?? 'Cancel'}
+        confirmLabel={d.actionConfirm ?? 'Confirm'}
+        onCancel={() => resolveDuplicateConfirm(false)}
+        onConfirm={() => resolveDuplicateConfirm(true)}
+      />
 
       {/* Breadcrumb */}
       <div className="bg-white border-b border-gray-100 px-6 py-3">

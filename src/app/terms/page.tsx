@@ -1,6 +1,4 @@
-import type { Metadata } from 'next'
-
-export const metadata: Metadata = {
+export const metadata = {
   title: 'Terms of Service',
   description: 'Hire2Skill Terms of Service — the rules and conditions for using the Hire2Skill platform.',
 }

@@ -1,6 +1,4 @@
-import type { Metadata } from 'next'
-
-export const metadata: Metadata = {
+export const metadata = {
   title: 'Cookie Policy',
   description: 'Hire2Skill Cookie Policy — what cookies we use, why, and how to control them.',
 }
