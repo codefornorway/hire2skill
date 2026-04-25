@@ -4,6 +4,9 @@ import React, { useState, useRef, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import { FEATURES } from '@/lib/features'
+import { useLanguage } from '@/context/LanguageContext'
+import { formatDateByLocale } from '@/lib/i18n/date'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -216,6 +219,10 @@ function VerificationTab({ profile, userId }: { profile: Profile | null; userId:
 
   function submitPersonalNumber(e: React.FormEvent) {
     e.preventDefault()
+    if (!FEATURES.enableBankId) {
+      setPersonalNumberError('BankID verification is currently unavailable.')
+      return
+    }
     const digits = personalNumber.replace(/\s/g, '')
     if (digits.length !== 11 || !/^\d{11}$/.test(digits)) {
       setPersonalNumberError('Enter your 11-digit personal number (fødselsnummer)')
@@ -279,6 +286,7 @@ function VerificationTab({ profile, userId }: { profile: Profile | null; userId:
               </button>
 
               <button type="button" onClick={() => setMethod('bankid')}
+                disabled={!FEATURES.enableBankId}
                 className="flex flex-col items-center gap-2.5 rounded-2xl border-2 p-4 text-left transition-all"
                 style={method === 'bankid'
                   ? { borderColor: '#1D4ED8', background: '#EFF6FF' }
@@ -293,7 +301,9 @@ function VerificationTab({ profile, userId }: { profile: Profile | null; userId:
                 </div>
                 <div>
                   <p className="text-sm font-bold" style={{ color: method === 'bankid' ? '#1D4ED8' : '#374151' }}>BankID</p>
-                  <p className="text-xs text-gray-400 mt-0.5">Instant verification via Norwegian BankID</p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {FEATURES.enableBankId ? 'Instant verification via Norwegian BankID' : 'Temporarily unavailable'}
+                  </p>
                 </div>
               </button>
             </div>
@@ -490,6 +500,7 @@ export default function ProfileContent({
   posts: Post[]
   reviews: Review[]
 }) {
+  const { locale } = useLanguage()
   const router = useRouter()
   const [tab, setTab] = useState('profile')
 
@@ -506,6 +517,7 @@ export default function ProfileContent({
   const [bringsTools, setBringsTools] = useState(Boolean(init?.brings_tools))
   const [canInvoice, setCanInvoice] = useState(Boolean(init?.can_invoice))
   const [avatarErr, setAvatarErr] = useState('')
+  const [profileErr, setProfileErr] = useState('')
   const [profSaving, setProfSaving] = useState(false)
   const [profSaved,  setProfSaved]  = useState(false)
   const fileRef  = useRef<HTMLInputElement>(null)
@@ -597,8 +609,9 @@ export default function ProfileContent({
   }
 
   async function saveProfile() {
+    setProfileErr('')
     setProfSaving(true)
-    await createClient().from('profiles').upsert({
+    const { error } = await createClient().from('profiles').upsert({
       id: user.id, role, display_name: name, bio, location,
       hourly_rate: rate ? Number(rate) : null, categories: cats, avatar_url: avatar,
       video_intro_url: videoUrl.trim() || null,
@@ -606,7 +619,12 @@ export default function ProfileContent({
       brings_tools: bringsTools,
       can_invoice: canInvoice,
     })
-    setProfSaving(false); setProfSaved(true)
+    setProfSaving(false)
+    if (error) {
+      setProfileErr(error.message)
+      return
+    }
+    setProfSaved(true)
     setTimeout(() => setProfSaved(false), 3000)
   }
 
@@ -623,6 +641,10 @@ export default function ProfileContent({
   }
 
   async function sendPhoneCode() {
+    if (!FEATURES.enableSms2fa) {
+      setPhoneErr('SMS verification is currently unavailable.')
+      return
+    }
     setPhoneBusy(true); setPhoneErr('')
     await new Promise(r => setTimeout(r, 900))
     setPhoneBusy(false); setPhoneStep('otp'); setOtp('')
@@ -660,6 +682,10 @@ export default function ProfileContent({
   }
 
   async function handleDeleteSendCode() {
+    if (!FEATURES.enableSms2fa) {
+      setDelErr('SMS verification is currently unavailable.')
+      return
+    }
     setDelBusy(true); setDelErr('')
     await new Promise(r => setTimeout(r, 900))
     setDelBusy(false); setDeleteStep('otp')
@@ -737,7 +763,7 @@ export default function ProfileContent({
                   <div>
                     <p className="text-sm font-bold text-gray-900">{name || user.email}</p>
                     <p className="text-xs text-gray-400 mt-0.5">
-                      Member since {new Date(user.created_at).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}
+                      Member since {formatDateByLocale(user.created_at, locale, { month: 'long', year: 'numeric' })}
                     </p>
                     <button onClick={() => fileRef.current?.click()}
                       className="mt-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700">
@@ -748,6 +774,9 @@ export default function ProfileContent({
 
                 {avatarErr && (
                   <p className="mb-4 text-xs text-red-500 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{avatarErr}</p>
+                )}
+                {profileErr && (
+                  <p className="mb-4 text-xs text-red-500 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{profileErr}</p>
                 )}
 
                 {/* Role switcher */}
@@ -900,6 +929,7 @@ export default function ProfileContent({
                     setBringsTools(Boolean(init?.brings_tools))
                     setCanInvoice(Boolean(init?.can_invoice))
                     setAvatarErr('')
+                    setProfileErr('')
                   }} />
 
                 {/* ── Reviews received ── */}
@@ -943,7 +973,7 @@ export default function ProfileContent({
                               <div>
                                 <p className="text-sm font-bold text-gray-900">{rev.reviewer_name ?? 'Anonymous'}</p>
                                 <p className="text-xs text-gray-400">
-                                  {new Date(rev.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                  {formatDateByLocale(rev.created_at, locale, { day: 'numeric', month: 'long', year: 'numeric' })}
                                 </p>
                               </div>
                             </div>
@@ -1025,7 +1055,7 @@ export default function ProfileContent({
                     <button onClick={sendPhoneCode} disabled={!phone || phoneBusy}
                       className="w-full rounded-xl py-3 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
                       style={{ background: 'linear-gradient(90deg,#2563EB,#38BDF8)' }}>
-                      {phoneBusy ? 'Sending…' : 'Send Code'}
+                      {phoneBusy ? 'Sending…' : FEATURES.enableSms2fa ? 'Send Code' : 'SMS unavailable'}
                     </button>
                   </div>
                 ) : (
@@ -1034,9 +1064,11 @@ export default function ProfileContent({
                     <input type="text" value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, ''))}
                       maxLength={6} placeholder="000000"
                       className="w-full rounded-xl border border-gray-200 px-4 py-3 text-lg font-bold text-center tracking-[0.6em] outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition" />
-                    <p className="text-xs text-amber-600 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
-                      SMS is not active yet — type any 6 digits to save your phone number.
-                    </p>
+                    {!FEATURES.enableSms2fa && (
+                      <p className="text-xs text-amber-600 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+                        SMS verification is currently unavailable.
+                      </p>
+                    )}
                     {phoneErr && <p className="text-xs text-red-500">{phoneErr}</p>}
                     <div className="flex gap-3">
                       <button onClick={() => { setPhoneStep('input'); setPhoneErr('') }}
@@ -1055,7 +1087,7 @@ export default function ProfileContent({
             {/* ─── NOTIFICATIONS ─── */}
             {tab === 'notifications' && (
               <div>
-                <SectionTitle title="Notifications" sub="Choose how you want to be notified about activity on SkillLink." />
+                <SectionTitle title="Notifications" sub="Choose how you want to be notified about activity on Hire2Skill." />
 
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
@@ -1106,7 +1138,9 @@ export default function ProfileContent({
                   </div>
                   <p className="text-base font-extrabold text-gray-900 mb-2">Payment methods</p>
                   <p className="text-sm text-gray-400 max-w-xs leading-relaxed">
-                    Stripe and Vipps payment integration is coming soon. You will be able to add cards and pay directly through SkillLink.
+                    {FEATURES.enablePayments
+                      ? 'Connect your payment method and manage billing for bookings.'
+                      : 'Stripe and Vipps payment integration is currently unavailable.'}
                   </p>
                 </div>
               </div>
@@ -1137,7 +1171,7 @@ export default function ProfileContent({
                             <span className="text-xs text-gray-400">{post.category}</span>
                             <span className="text-xs text-gray-300">·</span>
                             <span className="text-xs text-gray-400">
-                              {new Date(post.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                              {formatDateByLocale(post.created_at, locale, { day: 'numeric', month: 'short' })}
                             </span>
                           </div>
                         </div>
@@ -1191,7 +1225,7 @@ export default function ProfileContent({
             {/* ─── ACCOUNT BALANCE ─── */}
             {tab === 'balance' && (
               <div>
-                <SectionTitle title="Account Balance" sub="Your SkillLink credit balance." />
+                <SectionTitle title="Account Balance" sub="Your Hire2Skill credit balance." />
                 <div className="flex items-center gap-6 p-6 rounded-2xl mb-8"
                   style={{ background: 'linear-gradient(135deg,#EFF6FF,#DBEAFE)' }}>
                   <div className="h-14 w-14 rounded-2xl flex items-center justify-center bg-white shadow-sm shrink-0">
@@ -1209,9 +1243,9 @@ export default function ProfileContent({
                 <button disabled
                   className="px-6 py-3 rounded-xl text-sm font-bold text-white opacity-50 cursor-not-allowed"
                   style={{ background: 'linear-gradient(90deg,#2563EB,#38BDF8)' }}>
-                  Add Credits — Coming Soon
+                  Add Credits — Currently unavailable
                 </button>
-                <p className="text-xs text-gray-400 mt-2">Vipps and card top-up coming with payment integration.</p>
+                <p className="text-xs text-gray-400 mt-2">Vipps and card top-up are currently unavailable.</p>
               </div>
             )}
 
@@ -1246,7 +1280,7 @@ export default function ProfileContent({
                       <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
                     </svg>
                     <p className="text-sm text-red-700">
-                      Once you have deleted your account, you will no longer be able to log in to the SkillLink site or apps.{' '}
+                      Once you have deleted your account, you will no longer be able to log in to the Hire2Skill site or apps.{' '}
                       <strong>This action cannot be undone.</strong>
                     </p>
                   </div>
@@ -1319,7 +1353,7 @@ export default function ProfileContent({
                     className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-center tracking-[0.5em] outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 transition mb-3" />
 
                   <p className="text-xs text-gray-400 text-center mb-5">
-                    By continuing, you permanently delete your SkillLink account and all data.
+                    By continuing, you permanently delete your Hire2Skill account and all data.
                   </p>
 
                   {delErr && <p className="text-xs text-red-500 mb-3 text-center">{delErr}</p>}

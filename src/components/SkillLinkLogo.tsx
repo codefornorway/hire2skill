@@ -41,9 +41,15 @@ export function LogoHorizontal() {
   return (
     <span className="flex items-center gap-3">
       <LogoIcon size={46} />
-      <span style={{ lineHeight: 1 }}>
-        <span className="text-xl font-extrabold tracking-tight" style={{ color: '#1E3A8A' }}>SKILL</span>
-        <span className="text-xl font-extrabold tracking-tight" style={{ color: '#38BDF8' }}>LINK</span>
+      <span
+        className="text-xl font-extrabold tracking-tight"
+        style={{
+          lineHeight: 1,
+        }}
+      >
+        <span style={{ color: '#1E3A8A' }}>HIRE</span>
+        <span style={{ color: '#60A5FA' }}>2</span>
+        <span style={{ color: '#1E3A8A' }}>SKILL</span>
       </span>
     </span>
   )

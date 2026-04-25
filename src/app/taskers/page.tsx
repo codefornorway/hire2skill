@@ -1,15 +1,58 @@
 import type { Metadata } from 'next'
+import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import TaskersContent from './TaskersContent'
+import { FEATURES } from '@/lib/features'
 
-export const metadata: Metadata = {
-  title: 'Browse Local Helpers',
-  description: 'Find verified helpers in your area. Search by service, location, price and rating. Book cleaners, movers, tutors, handymen and more across Norway.',
-  openGraph: {
-    title: 'Browse Local Helpers | SkillLink',
-    description: 'Find verified helpers near you across Norway.',
-    url: 'https://skilllink.no/taskers',
-  },
+function resolveMetaLocale(acceptLanguage: string | null): 'no' | 'da' | 'sv' | 'en' {
+  if (!acceptLanguage) return 'no'
+  const lower = acceptLanguage.toLowerCase()
+  if (lower.includes('nb') || lower.includes('nn') || lower.includes('no')) return 'no'
+  if (lower.includes('da')) return 'da'
+  if (lower.includes('sv')) return 'sv'
+  return 'en'
+}
+
+function taskersMetaByLocale(locale: 'no' | 'da' | 'sv' | 'en') {
+  switch (locale) {
+    case 'no':
+      return {
+        title: 'Finn lokale hjelpere',
+        description: 'Finn verifiserte hjelpere i ditt område. Søk etter tjeneste, sted, pris og vurdering. Book rengjoring, flytting, undervisning og mer i hele Norge.',
+      }
+    case 'da':
+      return {
+        title: 'Find lokale hjælpere',
+        description: 'Find verificerede hjælpere i dit område. Sog efter service, sted, pris og vurdering. Book rengoring, flytning, undervisning og mere i hele Norge.',
+      }
+    case 'sv':
+      return {
+        title: 'Hitta lokala hjalpare',
+        description: 'Hitta verifierade hjalpare i ditt omrade. Sok efter tjanst, plats, pris och betyg. Boka stadning, flytt, handledning och mer i hela Norge.',
+      }
+    default:
+      return {
+        title: 'Browse Local Helpers',
+        description: 'Find verified helpers in your area. Search by service, location, price and rating. Book cleaners, movers, tutors, handymen and more across Norway.',
+      }
+  }
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  const headerStore = await headers()
+  const locale = resolveMetaLocale(headerStore.get('accept-language'))
+  const copy = taskersMetaByLocale(locale)
+
+  return {
+    title: copy.title,
+    description: copy.description,
+    openGraph: {
+      title: `${copy.title} | Hire2Skill`,
+      description: copy.description,
+      url: 'https://hire2skill.com/taskers',
+      locale: locale === 'no' ? 'nb_NO' : locale === 'da' ? 'da_DK' : locale === 'sv' ? 'sv_SE' : 'en_GB',
+    },
+  }
 }
 
 const SAMPLE_TASKERS = [
@@ -30,6 +73,9 @@ const SAMPLE_TASKERS = [
 export default async function TaskersPage({ searchParams }: { searchParams: Promise<{ category?: string }> }) {
   const { category } = await searchParams
   const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
   const { data: profiles } = await supabase
     .from('profiles')
@@ -39,10 +85,63 @@ export default async function TaskersPage({ searchParams }: { searchParams: Prom
     .order('tasks_done', { ascending: false })
     .limit(100)
 
-  const hasRealData = profiles && profiles.length > 0
+  type HelperProfileRow = {
+    id: string
+    display_name: string | null
+    bio: string | null
+    hourly_rate: number | null
+    categories: string[] | null
+    location: string | null
+    verified: boolean | null
+    tasks_done: number | null
+    rating: number | null
+    avg_rating: number | null
+    review_count: number | null
+    response_hours: number | null
+    avatar_url: string | null
+    languages: string[] | null
+    brings_tools: boolean | null
+    can_invoice: boolean | null
+  }
+
+  let ownHelperProfile: HelperProfileRow | null = null
+  if (user) {
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, display_name, bio, hourly_rate, categories, location, verified, tasks_done, rating, avg_rating, review_count, response_hours, avatar_url, languages, brings_tools, can_invoice, role')
+      .eq('id', user.id)
+      .single()
+    if (data?.role === 'helper') {
+      ownHelperProfile = {
+        id: data.id,
+        display_name: data.display_name,
+        bio: data.bio,
+        hourly_rate: data.hourly_rate,
+        categories: data.categories,
+        location: data.location,
+        verified: data.verified,
+        tasks_done: data.tasks_done,
+        rating: data.rating,
+        avg_rating: data.avg_rating,
+        review_count: data.review_count,
+        response_hours: data.response_hours,
+        avatar_url: data.avatar_url,
+        languages: data.languages,
+        brings_tools: data.brings_tools,
+        can_invoice: data.can_invoice,
+      }
+    }
+  }
+
+  const mergedProfiles = [...(profiles ?? [])]
+  if (ownHelperProfile && !mergedProfiles.some(p => p.id === ownHelperProfile?.id)) {
+    mergedProfiles.unshift(ownHelperProfile)
+  }
+
+  const hasRealData = mergedProfiles.length > 0
   const taskers = hasRealData
-    ? profiles.map(p => ({ ...p, rating: (p.avg_rating ?? p.rating ?? 0) }))
-    : SAMPLE_TASKERS
+    ? mergedProfiles.map(p => ({ ...p, rating: (p.avg_rating ?? p.rating ?? 0) }))
+    : (FEATURES.enableDemoData ? SAMPLE_TASKERS : [])
 
   return <TaskersContent taskers={taskers} activeCategory={category ?? null} />
 }

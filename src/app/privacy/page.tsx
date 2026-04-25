@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'Privacy Policy',
-  description: 'SkillLink Privacy Policy — how we collect, use, and protect your personal data under GDPR.',
+  description: 'Hire2Skill Privacy Policy — how we collect, use, and protect your personal data under GDPR.',
 }
 
 const LAST_UPDATED = '1 April 2026'
@@ -22,13 +22,13 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-lg font-bold text-gray-900 mb-3">1. Who we are</h2>
             <p>
-              SkillLink AS (&quot;SkillLink&quot;, &quot;we&quot;, &quot;our&quot;) is the controller of your personal data.
-              We operate the SkillLink platform at skilllink.no, which connects task posters with local helpers across Norway.
+              Hire2Skill AS (&quot;Hire2Skill&quot;, &quot;we&quot;, &quot;our&quot;) is the controller of your personal data.
+              We operate the Hire2Skill platform at hire2skill.com, which connects task posters with local helpers across Norway.
               We are based in Oslo, Norway and process personal data in accordance with the General Data Protection Regulation (GDPR)
               as implemented in Norwegian law through the Personal Data Act (<em>personopplysningsloven</em>).
             </p>
             <p className="mt-3">
-              You can contact us at: <strong>privacy@skilllink.no</strong>
+              You can contact us at: <strong>privacy@hire2skill.com</strong>
             </p>
           </section>
 
@@ -102,7 +102,7 @@ export default function PrivacyPage() {
               <li><strong>Withdraw consent</strong> at any time for consent-based processing</li>
               <li><strong>Lodge a complaint</strong> with Datatilsynet (datatilsynet.no) if you believe we have breached GDPR</li>
             </ul>
-            <p className="mt-3 text-sm">To exercise any of these rights, email <strong>privacy@skilllink.no</strong>. We respond within 30 days.</p>
+            <p className="mt-3 text-sm">To exercise any of these rights, email <strong>privacy@hire2skill.com</strong>. We respond within 30 days.</p>
           </section>
 
           <section>

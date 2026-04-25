@@ -41,7 +41,7 @@ export const SERVICES: ServiceDef[] = [
       { q: 'Do I need to provide cleaning supplies?', a: 'Most cleaners bring their own eco-friendly supplies. You can specify your preferences when booking.' },
       { q: 'What if I\'m not happy with the result?', a: 'Contact us within 24 hours and we\'ll arrange a free re-clean or full refund.' },
       { q: 'Can I book a regular cleaner?', a: 'Yes — you can set up weekly, fortnightly, or monthly recurring bookings at a discounted rate.' },
-      { q: 'Are the cleaners insured?', a: 'All verified helpers on SkillLink have been ID-checked. We recommend discussing insurance coverage directly with your helper.' },
+      { q: 'Are the cleaners insured?', a: 'All verified helpers on Hire2Skill have been ID-checked. We recommend discussing insurance coverage directly with your helper.' },
     ],
     relatedSlugs: ['window-cleaning', 'handyman', 'furniture-assembly'],
   },
@@ -65,7 +65,7 @@ export const SERVICES: ServiceDef[] = [
     faqs: [
       { q: 'How far in advance should I book?', a: 'We recommend booking at least 3–5 days ahead, especially for weekends. Same-day bookings are possible for smaller moves.' },
       { q: 'Is my furniture covered if damaged?', a: 'Discuss coverage with your helper before the move. Many carry personal liability insurance.' },
-      { q: 'Can helpers disassemble IKEA furniture?', a: 'Yes — most movers on SkillLink are experienced with flat-pack furniture disassembly and reassembly.' },
+      { q: 'Can helpers disassemble IKEA furniture?', a: 'Yes — most movers on Hire2Skill are experienced with flat-pack furniture disassembly and reassembly.' },
       { q: 'Do I need to pack boxes myself?', a: 'Packing is a separate add-on. Let your helper know if you need help packing when booking.' },
     ],
     relatedSlugs: ['furniture-assembly', 'cleaning', 'handyman'],
@@ -89,7 +89,7 @@ export const SERVICES: ServiceDef[] = [
     ],
     faqs: [
       { q: 'How quickly can I see improvement?', a: 'Most students see measurable improvement within 4–6 sessions when attending consistently.' },
-      { q: 'Can sessions be online?', a: 'Yes — all tutors on SkillLink can offer online sessions via video call if preferred.' },
+      { q: 'Can sessions be online?', a: 'Yes — all tutors on Hire2Skill can offer online sessions via video call if preferred.' },
       { q: 'Are tutors qualified?', a: 'Our verified tutors hold relevant degrees or teaching qualifications. Check individual profiles for credentials.' },
       { q: 'Can I switch tutors if it\'s not a good fit?', a: 'Absolutely — just find a new tutor and book a session. No long-term commitment required.' },
     ],
@@ -113,7 +113,7 @@ export const SERVICES: ServiceDef[] = [
       { title: 'Job done right', desc: 'Your handyman arrives fully equipped. Pay only when you\'re satisfied.' },
     ],
     faqs: [
-      { q: 'Do handymen bring their own tools?', a: 'Yes — all handymen on SkillLink come fully equipped. Just let them know if you have specific tools or materials on-site.' },
+      { q: 'Do handymen bring their own tools?', a: 'Yes — all handymen on Hire2Skill come fully equipped. Just let them know if you have specific tools or materials on-site.' },
       { q: 'Can I get a quote before booking?', a: 'Yes — message the handyman with photos and a description to get a fixed-price quote before confirming.' },
       { q: 'What if the job takes longer than expected?', a: 'Agree on a time estimate upfront. Any extension should be agreed and paid at the same hourly rate.' },
       { q: 'Do you handle electrical work?', a: 'Minor fixture swaps are fine. For licensed electrical work, we recommend a certified electrician.' },
@@ -141,7 +141,7 @@ export const SERVICES: ServiceDef[] = [
       { q: 'Do I need to unbox everything first?', a: 'No — your assembler will unbox, build, and dispose of all packaging for you.' },
       { q: 'What if a part is missing?', a: 'Assemblers can identify missing parts and contact the manufacturer on your behalf. They always have basic hardware spares.' },
       { q: 'How long does IKEA assembly take?', a: 'A wardrobe typically takes 1–2 hours. A full room of flat-pack furniture usually takes 3–4 hours.' },
-      { q: 'Can you wall-mount shelves at the same time?', a: 'Yes — most assemblers on SkillLink also do wall mounting and hanging as part of the same visit.' },
+      { q: 'Can you wall-mount shelves at the same time?', a: 'Yes — most assemblers on Hire2Skill also do wall mounting and hanging as part of the same visit.' },
     ],
     relatedSlugs: ['handyman', 'moving', 'cleaning'],
   },
@@ -189,7 +189,7 @@ export const SERVICES: ServiceDef[] = [
     ],
     faqs: [
       { q: 'Can support be done remotely?', a: 'Yes — many issues can be resolved remotely via screen-sharing without a home visit.' },
-      { q: 'Will my data be safe?', a: 'All tech helpers on SkillLink follow data privacy best practices. We recommend backing up before any repair.' },
+      { q: 'Will my data be safe?', a: 'All tech helpers on Hire2Skill follow data privacy best practices. We recommend backing up before any repair.' },
       { q: 'Do you support Apple and Windows?', a: 'Yes — our helpers are experienced with both platforms, as well as Android, iOS, and Linux.' },
       { q: 'What if the problem isn\'t fixed?', a: 'You only pay if the problem is resolved. Discuss the scope and guarantee with your tech helper upfront.' },
     ],
@@ -365,7 +365,7 @@ export const SERVICES: ServiceDef[] = [
     faqs: [
       { q: 'Do I need a gym membership?', a: 'No — sessions can be at your home, local park, or an outdoor space. Trainers bring equipment.' },
       { q: 'How quickly will I see results?', a: 'With consistent sessions and good nutrition, most clients see noticeable results within 4–8 weeks.' },
-      { q: 'Are trainers certified?', a: 'Yes — all personal trainers on SkillLink hold recognised certifications (PT, NASM, ACE, or equivalent).' },
+      { q: 'Are trainers certified?', a: 'Yes — all personal trainers on Hire2Skill hold recognised certifications (PT, NASM, ACE, or equivalent).' },
       { q: 'Can trainers work with injuries?', a: 'Many trainers specialise in rehabilitation training. Mention any injuries or medical conditions when booking.' },
     ],
     relatedSlugs: ['tutoring', 'elder-care', 'dog-walking'],
@@ -438,7 +438,7 @@ export const SERVICES: ServiceDef[] = [
       { title: 'Ongoing support', desc: 'Your carer builds a relationship with your loved one, providing reliable, friendly assistance.' },
     ],
     faqs: [
-      { q: 'Are carers background-checked?', a: 'All verified helpers on SkillLink have completed identity verification. We recommend also requesting references directly.' },
+      { q: 'Are carers background-checked?', a: 'All verified helpers on Hire2Skill have completed identity verification. We recommend also requesting references directly.' },
       { q: 'Can carers drive elderly clients to appointments?', a: 'Many carers offer transport assistance. Check individual profiles for this capability.' },
       { q: 'What if my relative has dementia?', a: 'Some carers specialise in dementia care. Filter by experience and mention this need when booking.' },
       { q: 'Can visits be arranged at short notice?', a: 'Yes — many carers are available for same-day or next-day visits, especially for urgent needs.' },
@@ -540,7 +540,7 @@ export const SERVICES: ServiceDef[] = [
     faqs: [
       { q: 'Can you deliver large furniture?', a: 'Yes — select a helper with a van when booking large items. Mention dimensions and weight.' },
       { q: 'Is same-day delivery available?', a: 'Yes — same-day bookings are available in most cities, subject to helper availability.' },
-      { q: 'Can I track my delivery?', a: 'Your helper will send updates via the SkillLink chat. Real-time GPS tracking coming soon.' },
+      { q: 'Can I track my delivery?', a: 'Your helper will send updates via the Hire2Skill chat. Real-time GPS tracking is currently unavailable.' },
       { q: 'Are fragile items handled carefully?', a: 'Mention if items are fragile when booking. Most couriers carry basic padding and blankets.' },
     ],
     relatedSlugs: ['shopping', 'moving', 'furniture-assembly'],
@@ -1407,7 +1407,7 @@ export const SERVICES: ServiceDef[] = [
     ],
     faqs: [
       { q: 'How far in advance should I order a cake?', a: 'For custom celebration cakes, order at least 5–7 days ahead. Simple orders can often be fulfilled in 2–3 days.' },
-      { q: 'Can you make halal or allergy-friendly bakes?', a: 'Many bakers on SkillLink offer halal, gluten-free, nut-free, and vegan options. Specify requirements clearly when booking.' },
+      { q: 'Can you make halal or allergy-friendly bakes?', a: 'Many bakers on Hire2Skill offer halal, gluten-free, nut-free, and vegan options. Specify requirements clearly when booking.' },
       { q: 'Can I request a specific flavour or design?', a: 'Yes — share flavour preferences, colour schemes, and any design ideas or photos when placing your order.' },
       { q: 'Do you offer baking lessons?', a: 'Yes — several bakers offer one-on-one lessons for cakes, pastries, cookies, and traditional recipes. Check individual profiles.' },
     ],

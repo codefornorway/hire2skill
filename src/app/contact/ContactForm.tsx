@@ -88,7 +88,7 @@ export default function ContactForm() {
 
       {status === 'error' && (
         <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
-          Something went wrong. Please email us directly at support@skilllink.no
+          Something went wrong. Please email us directly at support@hire2skill.com
         </p>
       )}
 

@@ -184,7 +184,15 @@ function TaskerCard({ tasker, bookLabel, replyLabel, doneLabel }: { tasker: Disp
 }
 
 // ── Main export ─────────────────────────────────────────────────────────────
-export default function HomeContent({ jobs, helpers }: { jobs: Job[]; helpers: RealHelper[] | null }) {
+export default function HomeContent({
+  jobs,
+  helpers,
+  enableDemoData,
+}: {
+  jobs: Job[]
+  helpers: RealHelper[] | null
+  enableDemoData: boolean
+}) {
   const { t } = useLanguage()
   const h = t.home
 
@@ -235,18 +243,20 @@ export default function HomeContent({ jobs, helpers }: { jobs: Job[]; helpers: R
           reply: '< 2h',
         }
       })
-    : SAMPLE_TASKERS.map((t, i) => ({
-        initials: t.initials,
-        name: t.name,
-        avatarUrl: null,
-        avatarColor: AVATAR_COLORS[i],
-        location: t.location,
-        catKey: t.category,
-        price: t.price,
-        rating: t.rating,
-        tasks: t.tasks,
-        reply: t.reply,
-      }))
+    : (enableDemoData
+      ? SAMPLE_TASKERS.map((t, i) => ({
+          initials: t.initials,
+          name: t.name,
+          avatarUrl: null,
+          avatarColor: AVATAR_COLORS[i],
+          location: t.location,
+          catKey: t.category,
+          price: t.price,
+          rating: t.rating,
+          tasks: t.tasks,
+          reply: t.reply,
+        }))
+      : [])
 
   const HOW_STEPS = [
     {
@@ -344,8 +354,8 @@ export default function HomeContent({ jobs, helpers }: { jobs: Job[]; helpers: R
         <div className="mx-auto max-w-5xl">
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-12 text-white">
             {[
-              { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>, title: 'SkillLink Guarantee', desc: 'Not happy? We make it right.' },
-              { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>, title: 'Secure Payments', desc: 'Pay safely through SkillLink.' },
+              { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>, title: 'Hire2Skill Guarantee', desc: 'Not happy? We make it right.' },
+              { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>, title: 'Secure Payments', desc: 'Pay safely through Hire2Skill.' },
               { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>, title: 'Verified Helpers', desc: 'ID-checked locals you can trust.' },
             ].map(item => (
               <div key={item.title} className="flex items-center gap-3">
@@ -486,7 +496,7 @@ export default function HomeContent({ jobs, helpers }: { jobs: Job[]; helpers: R
             <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#15803D" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
           </div>
           <div className="flex-1 text-center sm:text-left">
-            <h2 className="text-xl font-extrabold text-gray-900 mb-2">The SkillLink Happiness Guarantee</h2>
+            <h2 className="text-xl font-extrabold text-gray-900 mb-2">The Hire2Skill Happiness Guarantee</h2>
             <p className="text-sm text-gray-600 leading-relaxed max-w-xl">
               Every task is covered. If you&apos;re not satisfied with the work, contact us within 72 hours and we&apos;ll help make it right — at no extra cost to you. Our helpers are vetted, rated, and held to a high standard.
             </p>

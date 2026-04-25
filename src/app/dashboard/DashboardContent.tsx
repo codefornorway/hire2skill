@@ -2,11 +2,12 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useLanguage } from '@/context/LanguageContext'
 import { createClient } from '@/lib/supabase/client'
 import { logClientEvent } from '@/lib/telemetry'
 import { postNotify } from '@/lib/client-notify'
+import { formatDateByLocale } from '@/lib/i18n/date'
 import type { BookingItem, Post } from './page'
 
 type Props = {
@@ -20,22 +21,32 @@ type Props = {
   currentUserId: string
 }
 
-const STATUS_META: Record<string, { label: string; bg: string; color: string }> = {
-  pending:   { label: 'Pending',   bg: '#FFFBEB', color: '#92400E' },
-  accepted:  { label: 'Accepted',  bg: '#F0FDF4', color: '#15803D' },
-  declined:  { label: 'Declined',  bg: '#FEF2F2', color: '#DC2626' },
-  completed: { label: 'Completed', bg: '#EFF6FF', color: '#1D4ED8' },
-  cancelled: { label: 'Cancelled', bg: '#F9FAFB', color: '#6B7280' },
+const STATUS_META: Record<string, { bg: string; color: string }> = {
+  pending:   { bg: '#FFFBEB', color: '#92400E' },
+  accepted:  { bg: '#F0FDF4', color: '#15803D' },
+  declined:  { bg: '#FEF2F2', color: '#DC2626' },
+  completed: { bg: '#EFF6FF', color: '#1D4ED8' },
+  cancelled: { bg: '#F9FAFB', color: '#6B7280' },
 }
 
-const POST_STATUS_META: Record<string, { label: string; bg: string; color: string }> = {
-  open:      { label: 'Open',      bg: '#F0FDF4', color: '#15803D' },
-  closed:    { label: 'Closed',    bg: '#F9FAFB', color: '#6B7280' },
-  cancelled: { label: 'Cancelled', bg: '#FEF2F2', color: '#DC2626' },
+const POST_STATUS_META: Record<string, { bg: string; color: string }> = {
+  open:      { bg: '#F0FDF4', color: '#15803D' },
+  closed:    { bg: '#F9FAFB', color: '#6B7280' },
+  cancelled: { bg: '#FEF2F2', color: '#DC2626' },
 }
 
 type FilterOption = 'all' | 'pending' | 'accepted' | 'declined' | 'cancelled' | 'completed'
 const ALL_FILTERS: FilterOption[] = ['all', 'pending', 'accepted', 'declined', 'completed', 'cancelled']
+
+function haversineKm(a: { lat: number; lon: number }, b: { lat: number; lon: number }) {
+  const R = 6371
+  const dLat = ((b.lat - a.lat) * Math.PI) / 180
+  const dLon = ((b.lon - a.lon) * Math.PI) / 180
+  const lat1 = (a.lat * Math.PI) / 180
+  const lat2 = (b.lat * Math.PI) / 180
+  const x = Math.sin(dLat / 2) ** 2 + Math.sin(dLon / 2) ** 2 * Math.cos(lat1) * Math.cos(lat2)
+  return 2 * R * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x))
+}
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime()
@@ -66,10 +77,18 @@ function FilterChips({
   active: FilterOption
   onChange: (f: FilterOption) => void
 }) {
+  const { t } = useLanguage()
+  const d = t.dashboard
   const chips = ALL_FILTERS
     .map(f => ({
       key: f,
-      label: f === 'all' ? 'All' : f.charAt(0).toUpperCase() + f.slice(1),
+      label:
+        f === 'all' ? d.filterAll :
+          f === 'pending' ? d.statusPending :
+            f === 'accepted' ? d.statusAccepted :
+              f === 'declined' ? d.statusDeclined :
+                f === 'completed' ? d.statusCompleted :
+                  d.statusCancelled,
       count: f === 'all' ? bookings.length : bookings.filter(b => b.status === f).length,
     }))
     .filter(c => c.count > 0 || c.key === 'all')
@@ -103,6 +122,9 @@ function ReviewModal({
   onClose: () => void
   onDone: (bookingId: string) => void
 }) {
+  const { t } = useLanguage()
+  const c = t.chatPage
+  const d = t.dashboard
   const [rating, setRating] = useState(0)
   const [hover, setHover] = useState(0)
   const [body, setBody] = useState('')
@@ -146,8 +168,8 @@ function ReviewModal({
                 <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
               </svg>
             </div>
-            <h3 className="text-xl font-extrabold text-gray-900 mb-2">Review submitted!</h3>
-            <p className="text-sm text-gray-500 mb-6">Thanks for sharing your feedback.</p>
+            <h3 className="text-xl font-extrabold text-gray-900 mb-2">{d.reviewSubmittedTitle}</h3>
+            <p className="text-sm text-gray-500 mb-6">{d.reviewSubmittedBody}</p>
             <button onClick={() => { onDone(booking.id); onClose() }}
               className="w-full rounded-xl py-3 text-sm font-bold text-white hover:opacity-90"
               style={{ background: 'linear-gradient(90deg,#2563EB,#38BDF8)' }}>
@@ -157,7 +179,7 @@ function ReviewModal({
         ) : (
           <>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-extrabold text-gray-900">Leave a review</h3>
+              <h3 className="text-lg font-extrabold text-gray-900">{d.reviewLeaveTitle}</h3>
               <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -165,8 +187,7 @@ function ReviewModal({
               </button>
             </div>
             <p className="text-sm text-gray-500 mb-5">
-              How was your experience with{' '}
-              <span className="font-semibold text-gray-800">{booking.other_display_name ?? 'them'}</span>?
+              {d.reviewQuestion(booking.other_display_name ?? c.unknownUser)}
             </p>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="flex gap-1 justify-center py-1">
@@ -190,13 +211,13 @@ function ReviewModal({
               )}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                  Written review <span className="font-normal text-gray-400">(optional)</span>
+                  {d.reviewWritten} <span className="font-normal text-gray-400">{d.optional}</span>
                 </label>
                 <textarea
                   rows={3}
                   value={body}
                   onChange={e => setBody(e.target.value)}
-                  placeholder="Share your experience…"
+                  placeholder={d.reviewPlaceholder}
                   className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 resize-none transition"
                 />
               </div>
@@ -206,12 +227,12 @@ function ReviewModal({
               <div className="flex gap-3 pt-1">
                 <button type="button" onClick={onClose}
                   className="flex-1 rounded-xl py-3 text-sm font-bold border-2 border-gray-200 text-gray-600 hover:border-gray-300 transition-colors">
-                  Cancel
+                  {d.actionCancel}
                 </button>
                 <button type="submit" disabled={rating === 0 || submitting}
                   className="flex-1 rounded-xl py-3 text-sm font-bold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
                   style={{ background: 'linear-gradient(90deg,#F59E0B,#FBBF24)' }}>
-                  {submitting ? 'Submitting…' : 'Submit review'}
+                  {submitting ? d.actionSubmitting : d.actionSubmitReview}
                 </button>
               </div>
             </form>
@@ -302,6 +323,9 @@ function RescheduleModal({
   onClose: () => void
   onDone: (bookingId: string, newDate: string) => void
 }) {
+  const { t } = useLanguage()
+  const c = t.chatPage
+  const d = t.dashboard
   const [date, setDate] = useState(booking.scheduled_date?.split('T')[0] ?? '')
   const [note, setNote] = useState('')
   const [saving, setSaving] = useState(false)
@@ -325,37 +349,37 @@ function RescheduleModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.45)' }}>
       <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-7">
         <div className="flex items-center justify-between mb-5">
-          <h3 className="text-lg font-extrabold text-gray-900">Reschedule booking</h3>
+          <h3 className="text-lg font-extrabold text-gray-900">{d.rescheduleTitle}</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
         <p className="text-sm text-gray-500 mb-5">
-          Rescheduling with <span className="font-semibold text-gray-800">{booking.other_display_name ?? 'helper'}</span>. They will be notified of the new date.
+          {d.rescheduleWith(booking.other_display_name ?? c.unknownUser)}
         </p>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">New date <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">{d.newDate} <span className="text-red-500">*</span></label>
             <input type="date" value={date} onChange={e => { setDate(e.target.value); setError('') }}
               min={new Date().toISOString().split('T')[0]}
               className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition" />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Note <span className="text-gray-400 font-normal text-xs">(optional)</span></label>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">{d.note} <span className="text-gray-400 font-normal text-xs">{d.optional}</span></label>
             <input type="text" value={note} onChange={e => setNote(e.target.value)}
-              placeholder="e.g. Morning works best for me"
+              placeholder={d.notePlaceholder}
               className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition" />
           </div>
           {error && <p className="text-xs text-red-500 bg-red-50 rounded-lg px-3 py-2">{error}</p>}
           <div className="flex gap-3 pt-1">
             <button type="button" onClick={onClose}
               className="flex-1 rounded-xl py-3 text-sm font-bold border-2 border-gray-200 text-gray-600 hover:border-gray-300 transition-colors">
-              Cancel
+              {d.actionCancel}
             </button>
             <button type="button" onClick={handleSave} disabled={saving}
               className="flex-1 rounded-xl py-3 text-sm font-bold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
               style={{ background: 'linear-gradient(90deg,#2563EB,#38BDF8)' }}>
-              {saving ? 'Saving…' : 'Confirm'}
+              {saving ? d.actionSaving : d.actionConfirm}
             </button>
           </div>
         </div>
@@ -370,18 +394,29 @@ function BookingCard({
   onUpdate,
   onReview,
   onReschedule,
+  distanceKm,
+  userCoords,
 }: {
   booking: BookingItem
   isHelper: boolean
   onUpdate: (id: string, status: string) => void
   onReview: (booking: BookingItem) => void
   onReschedule: (booking: BookingItem) => void
+  distanceKm?: number
+  userCoords?: { lat: number; lon: number } | null
 }) {
-  const { t } = useLanguage()
+  const { t, locale } = useLanguage()
   const d = t.dashboard
+  const c = t.chatPage
   const [updating, setUpdating] = useState(false)
   const [notifyWarn, setNotifyWarn] = useState<string | null>(null)
   const meta = STATUS_META[booking.status] ?? STATUS_META.pending
+  const statusLabel =
+    booking.status === 'pending' ? d.statusPending :
+      booking.status === 'accepted' ? d.statusAccepted :
+        booking.status === 'declined' ? d.statusDeclined :
+          booking.status === 'completed' ? d.statusCompleted :
+            d.statusCancelled
 
   async function updateStatus(status: string) {
     setUpdating(true)
@@ -407,6 +442,22 @@ function BookingCard({
     }
   }
 
+  function openDirections() {
+    if (!booking.post_location || typeof window === 'undefined') return
+    const ua = typeof navigator === 'undefined' ? '' : navigator.userAgent
+    const prefersAppleMaps = /iPhone|iPad|iPod|Macintosh/i.test(ua)
+    const href = prefersAppleMaps
+      ? `https://maps.apple.com/?daddr=${encodeURIComponent(booking.post_location)}${
+        userCoords ? `&saddr=${encodeURIComponent(`${userCoords.lat},${userCoords.lon}`)}` : ''
+      }&dirflg=d`
+      : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(booking.post_location)}${
+        userCoords
+          ? `&origin=${encodeURIComponent(`${userCoords.lat},${userCoords.lon}`)}&travelmode=driving`
+          : ''
+      }`
+    window.open(href, '_blank', 'noopener,noreferrer')
+  }
+
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-5 flex flex-col gap-3">
       {notifyWarn && (
@@ -419,26 +470,57 @@ function BookingCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <p className="text-sm font-bold text-gray-900 truncate">
-              {isHelper ? 'From ' : 'To '}
-              <span className="text-blue-600">{booking.other_display_name ?? 'Unknown'}</span>
+              {isHelper ? `${d.from} ` : `${d.to} `}
+              <span className="text-blue-600">{booking.other_display_name ?? c.unknownUser}</span>
             </p>
             <span className="text-xs text-gray-400 shrink-0">{timeAgo(booking.created_at)}</span>
           </div>
           <span className="inline-block mt-1 rounded-full px-2.5 py-0.5 text-xs font-semibold"
             style={{ background: meta.bg, color: meta.color }}>
-            {meta.label}
+            {statusLabel}
           </span>
         </div>
       </div>
 
       <p className="text-sm text-gray-600 line-clamp-2 italic">&ldquo;{booking.message}&rdquo;</p>
+      {(booking.post_title || booking.post_category || booking.post_location) && (
+        <div className="rounded-xl border border-gray-100 bg-gray-50 px-3 py-2">
+          {booking.post_title && (
+            <p className="text-xs font-semibold text-gray-700 truncate">{booking.post_title}</p>
+          )}
+          {(booking.post_category || booking.post_location) && (
+            <p className="text-[11px] text-gray-500 mt-0.5">
+              {[booking.post_location, booking.post_category].filter(Boolean).join(' · ')}
+            </p>
+          )}
+          {booking.post_location && (
+            <div className="flex items-center justify-between gap-2 mt-1.5">
+              <button
+                type="button"
+                onClick={openDirections}
+                className="inline-flex text-[11px] font-semibold text-blue-600 hover:underline"
+              >
+                {d.actionDirections}
+              </button>
+              {typeof distanceKm === 'number' && Number.isFinite(distanceKm) && (
+                <span className="text-[11px] text-gray-500">
+                  {d.distanceKmAway(new Intl.NumberFormat(
+                    locale === 'no' ? 'nb-NO' : locale === 'da' ? 'da-DK' : locale === 'sv' ? 'sv-SE' : 'en-GB',
+                    { maximumFractionDigits: 1 },
+                  ).format(distanceKm))}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {(booking.scheduled_date || booking.budget) && (
         <div className="flex flex-wrap gap-3 text-xs text-gray-400">
           {booking.scheduled_date && (
             <span className="flex items-center gap-1">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-              {new Date(booking.scheduled_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+              {formatDateByLocale(booking.scheduled_date, locale, { day: 'numeric', month: 'short', year: 'numeric' })}
             </span>
           )}
           {booking.budget && (
@@ -452,25 +534,35 @@ function BookingCard({
 
       {/* Pending: helper accepts/declines */}
       {booking.status === 'pending' && isHelper && (
-        <div className="flex gap-2 pt-1">
+        <div className="grid grid-cols-3 gap-2 pt-1">
+          <Link href={`/chat/${booking.id}`}
+            className="rounded-xl py-2 text-sm font-bold border-2 border-blue-200 text-blue-700 text-center hover:bg-blue-50 transition-colors">
+            {d.actionMessage}
+          </Link>
           <button onClick={() => updateStatus('declined')} disabled={updating}
-            className="flex-1 rounded-xl py-2 text-sm font-bold border-2 border-gray-200 text-gray-600 hover:border-red-300 hover:text-red-600 transition-colors disabled:opacity-50">
-            Decline
+            className="rounded-xl py-2 text-sm font-bold border-2 border-gray-200 text-gray-600 hover:border-red-300 hover:text-red-600 transition-colors disabled:opacity-50">
+            {d.actionDecline}
           </button>
           <button onClick={() => updateStatus('accepted')} disabled={updating}
-            className="flex-1 rounded-xl py-2 text-sm font-bold text-white hover:opacity-90 transition-opacity disabled:opacity-50"
+            className="rounded-xl py-2 text-sm font-bold text-white hover:opacity-90 transition-opacity disabled:opacity-50"
             style={{ background: 'linear-gradient(90deg,#16A34A,#22C55E)' }}>
-            {updating ? 'Saving…' : 'Accept'}
+            {updating ? d.actionSaving : d.actionAccept}
           </button>
         </div>
       )}
 
       {/* Pending: poster cancels */}
       {booking.status === 'pending' && !isHelper && (
-        <button onClick={() => updateStatus('cancelled')} disabled={updating}
-          className="w-full rounded-xl py-2 text-sm font-bold border-2 border-gray-200 text-gray-500 hover:border-red-300 hover:text-red-600 transition-colors disabled:opacity-50">
-          {updating ? 'Cancelling…' : 'Cancel request'}
-        </button>
+        <div className="grid grid-cols-2 gap-2 pt-1">
+          <Link href={`/chat/${booking.id}`}
+            className="rounded-xl py-2 text-sm font-bold border-2 border-blue-200 text-blue-700 text-center hover:bg-blue-50 transition-colors">
+            {d.actionMessage}
+          </Link>
+          <button onClick={() => updateStatus('cancelled')} disabled={updating}
+            className="rounded-xl py-2 text-sm font-bold border-2 border-gray-200 text-gray-500 hover:border-red-300 hover:text-red-600 transition-colors disabled:opacity-50">
+            {updating ? d.actionCancelling : d.actionCancelRequest}
+          </button>
+        </div>
       )}
 
       {/* Accepted: message + reschedule + complete */}
@@ -489,18 +581,18 @@ function BookingCard({
               <Link href="/chat"
                 className="flex-1 rounded-xl py-2 text-sm font-bold text-white text-center hover:opacity-90 transition-opacity"
                 style={{ background: 'linear-gradient(90deg,#2563EB,#38BDF8)' }}>
-                Message {booking.other_display_name?.split(' ')[0] ?? 'helper'}
+                {d.messageWithName(booking.other_display_name?.split(' ')[0] ?? d.helperFallback)}
               </Link>
             )}
             <button onClick={() => updateStatus('completed')} disabled={updating}
               className="flex-1 rounded-xl py-2 text-sm font-bold border-2 border-green-300 text-green-700 hover:bg-green-50 transition-colors disabled:opacity-50">
-              {updating ? 'Saving…' : '✓ Mark complete'}
+              {updating ? d.actionSaving : d.actionMarkComplete}
             </button>
           </div>
           <button onClick={() => onReschedule(booking)}
             className="w-full rounded-xl py-2 text-sm font-semibold border border-gray-200 text-gray-500 hover:border-blue-300 hover:text-blue-600 transition-colors flex items-center justify-center gap-1.5">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            Reschedule
+            {d.actionReschedule}
           </button>
         </div>
       )}
@@ -511,11 +603,11 @@ function BookingCard({
           {!booking.has_review && (
             <button onClick={() => onReview(booking)}
               className="w-full rounded-xl py-2 text-sm font-bold border-2 border-amber-200 text-amber-700 hover:bg-amber-50 transition-colors">
-              ★ Leave a review
+              {d.reviewCta}
             </button>
           )}
           {booking.has_review && (
-            <p className="text-center text-xs text-gray-400 py-1">✓ Review submitted</p>
+            <p className="text-center text-xs text-gray-400 py-1">{d.reviewSubmittedShort}</p>
           )}
           <PhotoUploadButton bookingId={booking.id} />
         </div>
@@ -550,7 +642,8 @@ const ClipboardIcon = (
 )
 
 export default function DashboardContent({ email, postCount, recentPosts, posted, role, bookings: initialBookings, currentUserId }: Props) {
-  const { t } = useLanguage()
+  const { t, locale } = useLanguage()
+  const d = t.dashboard
   const firstName = email.split('@')[0]
   const isHelper = role === 'helper'
 
@@ -559,6 +652,8 @@ export default function DashboardContent({ email, postCount, recentPosts, posted
   const [activeFilter, setActiveFilter] = useState<FilterOption>('all')
   const [reviewTarget, setReviewTarget] = useState<BookingItem | null>(null)
   const [rescheduleTarget, setRescheduleTarget] = useState<BookingItem | null>(null)
+  const [userCoords, setUserCoords] = useState<{ lat: number; lon: number } | null>(null)
+  const [distanceByLocation, setDistanceByLocation] = useState<Record<string, number>>({})
 
   function handleTabChange(tab: 'overview' | 'tasks') {
     setActiveTab(tab)
@@ -584,6 +679,59 @@ export default function DashboardContent({ email, postCount, recentPosts, posted
   const filteredBookings = activeFilter === 'all'
     ? bookings
     : bookings.filter(b => b.status === activeFilter)
+
+  useEffect(() => {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) return
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setUserCoords({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+      () => {},
+      { enableHighAccuracy: false, timeout: 7000, maximumAge: 120000 },
+    )
+  }, [])
+
+  useEffect(() => {
+    if (!userCoords) return
+    const origin = userCoords
+    const locations = [...new Set(
+      bookings
+        .map(b => b.post_location?.trim())
+        .filter((v): v is string => Boolean(v)),
+    )]
+    const missing = locations.filter(loc => distanceByLocation[loc] == null)
+    if (missing.length === 0) return
+
+    let cancelled = false
+    const controller = new AbortController()
+
+    async function loadDistances() {
+      const updates: Record<string, number> = {}
+      for (const loc of missing) {
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=jsonv2&countrycodes=no&limit=1&q=${encodeURIComponent(loc)}`,
+            { signal: controller.signal },
+          )
+          if (!res.ok) continue
+          const data = (await res.json()) as Array<{ lat?: string; lon?: string }>
+          const first = data[0]
+          if (!first?.lat || !first?.lon) continue
+          const km = haversineKm(origin, { lat: Number(first.lat), lon: Number(first.lon) })
+          if (Number.isFinite(km)) updates[loc] = km
+        } catch {
+          // Ignore geocoder/network failures per location.
+        }
+      }
+      if (!cancelled && Object.keys(updates).length > 0) {
+        setDistanceByLocation(prev => ({ ...prev, ...updates }))
+      }
+    }
+
+    void loadDistances()
+    return () => {
+      cancelled = true
+      controller.abort()
+    }
+  }, [bookings, distanceByLocation, userCoords])
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-8 w-full">
@@ -618,8 +766,8 @@ export default function DashboardContent({ email, postCount, recentPosts, posted
       {/* Tab bar */}
       <div className="flex items-center gap-1 mb-8 border-b border-gray-200">
         {([
-          { key: 'overview' as const, label: 'Overview' },
-          { key: 'tasks' as const, label: isHelper ? 'Requests' : 'My Tasks' },
+          { key: 'overview' as const, label: t.dashboard.tabOverview },
+          { key: 'tasks' as const, label: isHelper ? t.dashboard.tabRequests : t.dashboard.tabMyTasks },
         ]).map(tab => (
           <button key={tab.key} onClick={() => handleTabChange(tab.key)}
             className={`relative px-4 py-2.5 text-sm font-semibold transition-colors ${
@@ -644,7 +792,7 @@ export default function DashboardContent({ email, postCount, recentPosts, posted
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
             {[
               { label: t.dashboard.stats.posts, value: postCount },
-              { label: isHelper ? 'Requests received' : 'Requests sent', value: bookings.length },
+              { label: isHelper ? t.dashboard.requestsReceived : t.dashboard.requestsSent, value: bookings.length },
               { label: t.dashboard.stats.messages, value: 0 },
               { label: t.dashboard.stats.views, value: 0 },
             ].map(stat => (
@@ -694,8 +842,8 @@ export default function DashboardContent({ email, postCount, recentPosts, posted
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-6"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
                 </div>
                 <div>
-                  <p className="font-semibold text-sm text-gray-900">Invite friends</p>
-                  <p className="text-xs text-amber-600 font-medium">Earn 100 NOK per referral</p>
+                  <p className="font-semibold text-sm text-gray-900">{d.inviteFriends}</p>
+                  <p className="text-xs text-amber-600 font-medium">{t.dashboard.referralEarn}</p>
                 </div>
               </Link>
             </div>
@@ -717,7 +865,7 @@ export default function DashboardContent({ email, postCount, recentPosts, posted
                       <p className="text-xs text-gray-400 mt-0.5">{post.location} · {post.category}</p>
                     </div>
                     <span className="text-xs text-gray-400">
-                      {new Date(post.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                      {formatDateByLocale(post.created_at, locale, { day: 'numeric', month: 'short' })}
                     </span>
                   </div>
                 ))}
@@ -742,20 +890,29 @@ export default function DashboardContent({ email, postCount, recentPosts, posted
           {bookings.length === 0 ? (
             <EmptyState
               icon={ClipboardIcon}
-              heading="No requests yet"
-              sub="When someone books you, their request will appear here."
+              heading={t.dashboard.noRequestsYet}
+              sub={t.dashboard.noRequestsYetHint}
             />
           ) : (
             <>
               <FilterChips bookings={bookings} active={activeFilter} onChange={setActiveFilter} />
               {filteredBookings.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-gray-200 p-8 text-center text-sm text-gray-400">
-                  No {activeFilter} requests
+                  {d.noFilteredRequests(activeFilter)}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {filteredBookings.map(b => (
-                    <BookingCard key={b.id} booking={b} isHelper={true} onUpdate={handleBookingUpdate} onReview={setReviewTarget} onReschedule={setRescheduleTarget} />
+                    <BookingCard
+                      key={b.id}
+                      booking={b}
+                      isHelper={true}
+                      onUpdate={handleBookingUpdate}
+                      onReview={setReviewTarget}
+                      onReschedule={setRescheduleTarget}
+                      distanceKm={b.post_location ? distanceByLocation[b.post_location] : undefined}
+                      userCoords={userCoords}
+                    />
                   ))}
                 </div>
               )}
@@ -772,10 +929,10 @@ export default function DashboardContent({ email, postCount, recentPosts, posted
           <section>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest">
-                Posted Tasks ({recentPosts.length})
+                {t.dashboard.postedTasksCount(recentPosts.length)}
               </h2>
               <Link href="/post" className="text-xs font-semibold text-blue-600 hover:underline">
-                + New task
+                {t.dashboard.newTask}
               </Link>
             </div>
 
@@ -783,6 +940,10 @@ export default function DashboardContent({ email, postCount, recentPosts, posted
               <div className="flex flex-col gap-3">
                 {recentPosts.map(post => {
                   const pm = POST_STATUS_META[post.status] ?? POST_STATUS_META.open
+                  const postStatusLabel =
+                    post.status === 'open' ? d.statusOpen :
+                      post.status === 'closed' ? d.statusClosed :
+                        d.statusCancelled
                   return (
                     <div key={post.id}
                       className="flex items-center justify-between rounded-xl bg-white border border-gray-200 px-5 py-4 hover:border-blue-200 transition-colors">
@@ -793,16 +954,16 @@ export default function DashboardContent({ email, postCount, recentPosts, posted
                       <div className="flex items-center gap-3 shrink-0 ml-4">
                         <span className="hidden sm:inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold"
                           style={{ background: pm.bg, color: pm.color }}>
-                          {pm.label}
+                          {postStatusLabel}
                         </span>
                         <span className="text-xs text-gray-400">
-                          {new Date(post.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                          {formatDateByLocale(post.created_at, locale, { day: 'numeric', month: 'short' })}
                         </span>
                         <Link
                           href={`/taskers?category=${encodeURIComponent(post.category)}`}
                           className="rounded-lg px-3 py-1.5 text-xs font-semibold text-white whitespace-nowrap hover:opacity-90 transition-opacity"
                           style={{ background: 'linear-gradient(90deg,#2563EB,#38BDF8)' }}>
-                          Find helper →
+                          {d.findHelper}
                         </Link>
                       </div>
                     </div>
@@ -812,13 +973,13 @@ export default function DashboardContent({ email, postCount, recentPosts, posted
             ) : (
               <EmptyState
                 icon={ClipboardIcon}
-                heading="No tasks posted yet"
-                sub="Post a task to start receiving help from local helpers."
+                heading={t.dashboard.noTasksPostedYet}
+                sub={t.dashboard.noTasksPostedYetHint}
                 cta={
                   <Link href="/post"
                     className="inline-block rounded-xl px-5 py-2.5 text-sm font-bold text-white hover:opacity-90 transition-opacity"
                     style={{ background: 'linear-gradient(90deg,#2563EB,#38BDF8)' }}>
-                    Post your first task
+                    {t.dashboard.postFirstTask}
                   </Link>
                 }
               />
@@ -828,19 +989,19 @@ export default function DashboardContent({ email, postCount, recentPosts, posted
           {/* Section 2: Helpers contacted */}
           <section>
             <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
-              Helpers Contacted ({bookings.length})
+              {t.dashboard.helpersContactedCount(bookings.length)}
             </h2>
 
             {bookings.length === 0 ? (
               <EmptyState
                 icon={ClipboardIcon}
-                heading="No helpers contacted yet"
-                sub="Browse helpers and send a request to get started."
+                heading={t.dashboard.noHelpersContactedYet}
+                sub={t.dashboard.noHelpersContactedYetHint}
                 cta={
                   <Link href="/taskers"
                     className="inline-block rounded-xl px-5 py-2.5 text-sm font-bold text-white hover:opacity-90 transition-opacity"
                     style={{ background: 'linear-gradient(90deg,#2563EB,#38BDF8)' }}>
-                    Browse helpers
+                    {t.dashboard.browseHelpers}
                   </Link>
                 }
               />
@@ -849,12 +1010,21 @@ export default function DashboardContent({ email, postCount, recentPosts, posted
                 <FilterChips bookings={bookings} active={activeFilter} onChange={setActiveFilter} />
                 {filteredBookings.length === 0 ? (
                   <div className="rounded-xl border border-dashed border-gray-200 p-6 text-center text-sm text-gray-400">
-                    No {activeFilter} requests
+                    {t.dashboard.noFilteredRequests(activeFilter)}
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {filteredBookings.map(b => (
-                      <BookingCard key={b.id} booking={b} isHelper={false} onUpdate={handleBookingUpdate} onReview={setReviewTarget} onReschedule={setRescheduleTarget} />
+                      <BookingCard
+                        key={b.id}
+                        booking={b}
+                        isHelper={false}
+                        onUpdate={handleBookingUpdate}
+                        onReview={setReviewTarget}
+                        onReschedule={setRescheduleTarget}
+                        distanceKm={b.post_location ? distanceByLocation[b.post_location] : undefined}
+                        userCoords={userCoords}
+                      />
                     ))}
                   </div>
                 )}

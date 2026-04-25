@@ -1,9 +1,10 @@
-import type { Metadata } from 'next'
+import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import TaskerProfileContent from './TaskerProfileContent'
 import JsonLd from '@/components/JsonLd'
-import { buildTaskerProfileMetadata } from '@/lib/seo'
+import { buildTaskerProfileMetadata, resolveSeoLocale } from '@/lib/seo'
+import { FEATURES } from '@/lib/features'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,18 +17,59 @@ const SAMPLE_TASKERS = [
   { id: 's6', display_name: 'Mikkel T.', categories: ['Handyman'],    location: 'Stavanger', bio: 'Skilled handyman covering all small and medium repairs.' },
 ]
 
-export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
-  const { id } = await params
+function getTaskerFallbackCopy(locale: 'no' | 'da' | 'sv' | 'en') {
+  switch (locale) {
+    case 'no':
+      return {
+        localHelper: 'Lokal hjelper',
+        helper: 'Hjelper',
+        norway: 'Norge',
+        anonymous: 'Anonym',
+        localService: 'Lokal tjeneste',
+      }
+    case 'da':
+      return {
+        localHelper: 'Lokal hjalper',
+        helper: 'Hjalper',
+        norway: 'Norge',
+        anonymous: 'Anonym',
+        localService: 'Lokal tjeneste',
+      }
+    case 'sv':
+      return {
+        localHelper: 'Lokal hjalpare',
+        helper: 'Hjalpare',
+        norway: 'Norge',
+        anonymous: 'Anonym',
+        localService: 'Lokal tjanst',
+      }
+    default:
+      return {
+        localHelper: 'Local Helper',
+        helper: 'Helper',
+        norway: 'Norway',
+        anonymous: 'Anonymous',
+        localService: 'Local Service',
+      }
+  }
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id: rawId } = await params
+  const id = normalizeDemoTaskerId(rawId)
+  const headerStore = await headers()
+  const locale = resolveSeoLocale(headerStore.get('accept-language'))
+  const fallback = getTaskerFallbackCopy(locale)
   const supabase = await createClient()
   const { data: profile } = await supabase
     .from('profiles').select('display_name, bio, categories, location, avatar_url').eq('id', id).single()
 
-  const tasker = profile ?? SAMPLE_TASKERS.find(t => t.id === id)
+  const tasker = profile ?? (FEATURES.enableDemoData ? SAMPLE_TASKERS.find(t => t.id === id) : null)
   if (!tasker) return {}
 
-  const name = tasker.display_name ?? 'Local Helper'
-  const category = (tasker.categories ?? [])[0] ?? 'Helper'
-  const location = tasker.location ?? 'Norway'
+  const name = tasker.display_name ?? fallback.localHelper
+  const category = (tasker.categories ?? [])[0] ?? fallback.helper
+  const location = tasker.location ?? fallback.norway
 
   return buildTaskerProfileMetadata({
     id,
@@ -36,6 +78,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     location,
     bio: tasker.bio ?? '',
     avatarUrl: profile?.avatar_url ?? null,
+    locale,
   })
 }
 
@@ -46,7 +89,18 @@ const SAMPLE_TASKERS_FULL = [
   { id: 's4', display_name: 'Jonas B.', bio: 'IT professional with 8 years of industry experience. I fix slow computers, remove viruses, set up home networks, configure smart home devices, and help with smartphones and tablets. I explain everything in plain language — no jargon. Remote or on-site support available.', hourly_rate: 450, categories: ['IT & Tech'], location: 'Trondheim', verified: false, tasks_done: 29, rating: 4.7, response_hours: 3, avatar_url: null },
   { id: 's5', display_name: 'Sara L.', bio: 'Professional event coordinator with a passion for creating memorable experiences. From intimate birthday dinners to corporate conferences, I handle logistics, vendor coordination, and on-the-day management so you can relax and enjoy the occasion.', hourly_rate: 380, categories: ['Events'], location: 'Oslo', verified: true, tasks_done: 41, rating: 4.8, response_hours: 2, avatar_url: null },
   { id: 's6', display_name: 'Mikkel T.', bio: 'Skilled handyman covering all small and medium repairs: painting, wallpapering, shelf installation, furniture assembly, minor plumbing fixes, and general home maintenance. I come fully equipped with my own tools and always leave the work area clean.', hourly_rate: 420, categories: ['Handyman'], location: 'Stavanger', verified: true, tasks_done: 63, rating: 4.9, response_hours: 1, avatar_url: null },
+  { id: 's7', display_name: 'Leila H.', bio: 'Dog walker and pet sitter. Available weekdays and weekends. Insured and first-aid certified.', hourly_rate: 250, categories: ['Dog Walking', 'Pet Care'], location: 'Oslo', verified: true, tasks_done: 87, rating: 5.0, response_hours: 1, avatar_url: null },
+  { id: 's8', display_name: 'Tor A.', bio: 'Snow removal and garden maintenance all year round. I have my own equipment and a truck.', hourly_rate: 400, categories: ['Snow Removal', 'Gardening'], location: 'Oslo', verified: true, tasks_done: 115, rating: 4.9, response_hours: 2, avatar_url: null },
+  { id: 's9', display_name: 'Hana M.', bio: 'Certified personal trainer. Home visits, park sessions, or online. All fitness levels welcome.', hourly_rate: 550, categories: ['Personal Training'], location: 'Bergen', verified: true, tasks_done: 33, rating: 4.8, response_hours: 3, avatar_url: null },
+  { id: 's10', display_name: 'Kari N.', bio: 'Friendly companion and errand runner for the elderly. Patience, care, and reliability are my strengths.', hourly_rate: 280, categories: ['Elder Care', 'Shopping'], location: 'Trondheim', verified: true, tasks_done: 58, rating: 5.0, response_hours: 1, avatar_url: null },
+  { id: 's11', display_name: 'Lars P.', bio: 'Professional window cleaner. Residential and commercial. Rope access certified for high buildings.', hourly_rate: 350, categories: ['Window Cleaning', 'Cleaning'], location: 'Oslo', verified: false, tasks_done: 44, rating: 4.7, response_hours: 4, avatar_url: null },
+  { id: 's12', display_name: 'Nadia C.', bio: 'IKEA-certified furniture assembler. Fast, tidy, and I always double-check the instructions.', hourly_rate: 320, categories: ['Furniture Assembly'], location: 'Oslo', verified: true, tasks_done: 72, rating: 4.9, response_hours: 2, avatar_url: null },
 ]
+
+function normalizeDemoTaskerId(id: string): string {
+  if (/^\d+$/.test(id)) return `s${id}`
+  return id
+}
 
 const SAMPLE_REVIEWS: Record<string, { author: string; date: string; rating: number; text: string }[]> = {
   s1: [
@@ -85,7 +139,12 @@ export default async function TaskerProfilePage({
 }: {
   params: Promise<{ id: string }>
 }) {
-  const { id } = await params
+  const { id: rawId } = await params
+  const id = normalizeDemoTaskerId(rawId)
+  const headerStore = await headers()
+  const locale = resolveSeoLocale(headerStore.get('accept-language'))
+  const fallback = getTaskerFallbackCopy(locale)
+  const dateLocale = locale === 'no' ? 'nb-NO' : locale === 'da' ? 'da-DK' : locale === 'sv' ? 'sv-SE' : 'en-GB'
   const supabase = await createClient()
 
   const { data: profile } = await supabase
@@ -94,7 +153,7 @@ export default async function TaskerProfilePage({
     .eq('id', id)
     .single()
 
-  const tasker = profile ?? SAMPLE_TASKERS_FULL.find(t => t.id === id)
+  const tasker = profile ?? (FEATURES.enableDemoData ? SAMPLE_TASKERS_FULL.find(t => t.id === id) : null)
   if (!tasker) notFound()
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -116,8 +175,8 @@ export default async function TaskerProfilePage({
           .from('profiles').select('id, display_name').in('id', reviewerIds)
         const nameMap = Object.fromEntries((reviewerProfiles ?? []).map(p => [p.id, p.display_name]))
         reviews = rawReviews.map(r => ({
-          author: nameMap[r.reviewer_id] ?? 'Anonymous',
-          date: new Date(r.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+          author: nameMap[r.reviewer_id] ?? fallback.anonymous,
+          date: new Date(r.created_at).toLocaleDateString(dateLocale, { month: 'long', year: 'numeric' }),
           rating: r.rating,
           text: r.body ?? '',
         }))
@@ -125,7 +184,7 @@ export default async function TaskerProfilePage({
     } catch {
       // reviews table not yet created
     }
-  } else {
+  } else if (FEATURES.enableDemoData) {
     reviews = SAMPLE_REVIEWS[id] ?? SAMPLE_REVIEWS.s1
   }
 
@@ -140,10 +199,10 @@ export default async function TaskerProfilePage({
   const serviceSchema: Record<string, unknown> = {
     '@context': 'https://schema.org',
     '@type': 'Service',
-    name: `${resolvedTasker.display_name} — ${(resolvedTasker.categories ?? [])[0] ?? 'Local Helper'} in ${resolvedTasker.location ?? 'Norway'}`,
+    name: `${resolvedTasker.display_name} — ${(resolvedTasker.categories ?? [])[0] ?? fallback.localHelper} in ${resolvedTasker.location ?? fallback.norway}`,
     description: resolvedTasker.bio,
-    areaServed: { '@type': 'City', name: resolvedTasker.location ?? 'Norway' },
-    serviceType: (resolvedTasker.categories ?? [])[0] ?? 'Local Service',
+    areaServed: { '@type': 'City', name: resolvedTasker.location ?? fallback.norway },
+    serviceType: (resolvedTasker.categories ?? [])[0] ?? fallback.localService,
     provider: {
       '@type': 'Person',
       name: resolvedTasker.display_name,

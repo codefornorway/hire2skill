@@ -16,6 +16,10 @@ export type BookingItem = {
   created_at: string
   status: string
   message: string
+  post_id: string | null
+  post_title: string | null
+  post_category: string | null
+  post_location: string | null
   scheduled_date: string | null
   budget: number | null
   poster_id: string
@@ -52,18 +56,26 @@ export default async function DashboardPage({
     if (role === 'helper') {
       const { data: raw } = await supabase
         .from('bookings')
-        .select('id, created_at, status, message, scheduled_date, budget, poster_id, helper_id')
+        .select('id, created_at, status, message, post_id, scheduled_date, budget, poster_id, helper_id')
         .eq('helper_id', user.id)
         .order('created_at', { ascending: false })
         .limit(30)
 
       if (raw && raw.length > 0) {
         const ids = [...new Set(raw.map(b => b.poster_id))]
+        const postIds = [...new Set(raw.map(b => b.post_id).filter(Boolean) as string[])]
         const { data: profiles } = await supabase
           .from('profiles').select('id, display_name, avatar_url').in('id', ids)
+        const { data: posts } = postIds.length > 0
+          ? await supabase.from('posts').select('id, title, category, location').in('id', postIds)
+          : { data: [] as { id: string; title: string | null; category: string | null; location: string | null }[] }
         const map = Object.fromEntries((profiles ?? []).map(p => [p.id, p]))
+        const postMap = Object.fromEntries((posts ?? []).map(p => [p.id, p]))
         bookings = raw.map(b => ({
           ...b,
+          post_title: b.post_id ? postMap[b.post_id]?.title ?? null : null,
+          post_category: b.post_id ? postMap[b.post_id]?.category ?? null : null,
+          post_location: b.post_id ? postMap[b.post_id]?.location ?? null : null,
           other_display_name: map[b.poster_id]?.display_name ?? null,
           other_avatar_url: map[b.poster_id]?.avatar_url ?? null,
           has_review: false,
@@ -72,18 +84,26 @@ export default async function DashboardPage({
     } else {
       const { data: raw } = await supabase
         .from('bookings')
-        .select('id, created_at, status, message, scheduled_date, budget, poster_id, helper_id')
+        .select('id, created_at, status, message, post_id, scheduled_date, budget, poster_id, helper_id')
         .eq('poster_id', user.id)
         .order('created_at', { ascending: false })
         .limit(30)
 
       if (raw && raw.length > 0) {
         const ids = [...new Set(raw.map(b => b.helper_id))]
+        const postIds = [...new Set(raw.map(b => b.post_id).filter(Boolean) as string[])]
         const { data: profiles } = await supabase
           .from('profiles').select('id, display_name, avatar_url').in('id', ids)
+        const { data: posts } = postIds.length > 0
+          ? await supabase.from('posts').select('id, title, category, location').in('id', postIds)
+          : { data: [] as { id: string; title: string | null; category: string | null; location: string | null }[] }
         const map = Object.fromEntries((profiles ?? []).map(p => [p.id, p]))
+        const postMap = Object.fromEntries((posts ?? []).map(p => [p.id, p]))
         bookings = raw.map(b => ({
           ...b,
+          post_title: b.post_id ? postMap[b.post_id]?.title ?? null : null,
+          post_category: b.post_id ? postMap[b.post_id]?.category ?? null : null,
+          post_location: b.post_id ? postMap[b.post_id]?.location ?? null : null,
           other_display_name: map[b.helper_id]?.display_name ?? null,
           other_avatar_url: map[b.helper_id]?.avatar_url ?? null,
           has_review: false,

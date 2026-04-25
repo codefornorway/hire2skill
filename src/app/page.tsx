@@ -2,14 +2,15 @@ import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import HomeContent from './HomeContent'
 import JsonLd from '@/components/JsonLd'
+import { FEATURES } from '@/lib/features'
 
 export const metadata: Metadata = {
-  title: 'SkillLink — Find Local Helpers in Norway',
+  title: 'Hire2Skill — Find Local Helpers in Norway',
   description: 'Book verified local helpers for cleaning, moving, tutoring, handyman work and more. Serving Oslo, Bergen, Trondheim, Stavanger and across Norway.',
   openGraph: {
-    title: 'SkillLink — Find Local Helpers in Norway',
+    title: 'Hire2Skill — Find Local Helpers in Norway',
     description: 'Book verified local helpers for cleaning, moving, tutoring, handyman work and more across Norway.',
-    url: 'https://skilllink.no',
+    url: 'https://hire2skill.com',
     type: 'website',
   },
 }
@@ -54,7 +55,7 @@ export default async function Home() {
 
   const jobs = recentPosts && recentPosts.length >= 3
     ? recentPosts.map(p => ({ ...p, urgent: false }))
-    : SAMPLE_JOBS
+    : (FEATURES.enableDemoData ? SAMPLE_JOBS : [])
 
   const helpers: RealHelper[] | null =
     helperProfiles && helperProfiles.length >= 1
@@ -66,21 +67,21 @@ export default async function Home() {
           categories: (p.categories as string[] | null) ?? [],
           hourlyRate: p.hourly_rate ?? null,
         }))
-      : null
+      : (FEATURES.enableDemoData ? null : [])
 
   const orgSchema = {
     '@context': 'https://schema.org',
     '@type': 'Organization',
-    name: 'SkillLink',
-    url: 'https://skilllink.no',
-    description: 'SkillLink connects people with verified local helpers across Norway.',
+    name: 'Hire2Skill',
+    url: 'https://hire2skill.com',
+    description: 'Hire2Skill connects people with verified local helpers across Norway.',
     areaServed: { '@type': 'Country', name: 'Norway' },
   }
 
   return (
     <>
       <JsonLd data={orgSchema} />
-      <HomeContent jobs={jobs} helpers={helpers} />
+      <HomeContent jobs={jobs} helpers={helpers} enableDemoData={FEATURES.enableDemoData} />
     </>
   )
 }

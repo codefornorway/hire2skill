@@ -1,6 +1,6 @@
-// SkillLink Service Worker — push notifications + offline shell
+// Hire2Skill Service Worker — push notifications + offline shell
 
-const CACHE = 'skilllink-v1'
+const CACHE = 'hire2skill-v1'
 const OFFLINE_URL = '/offline'
 
 // ── Install: cache the offline fallback page ─────────────────────────────────
@@ -33,7 +33,7 @@ self.addEventListener('fetch', (e) => {
 
 // ── Push: show a notification ─────────────────────────────────────────────────
 self.addEventListener('push', (e) => {
-  let payload = { title: 'SkillLink', body: 'You have a new notification.', url: '/' }
+  let payload = { title: 'Hire2Skill', body: 'You have a new notification.', url: '/' }
   try {
     if (e.data) payload = { ...payload, ...e.data.json() }
   } catch {}

@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { Gift, Copy, Check, Users, BadgeCheck, Wallet } from 'lucide-react'
 import { useLanguage } from '@/context/LanguageContext'
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://skilllink.no'
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://hire2skill.com'
 
 export default function ReferralContent({ userId, displayName }: { userId: string; displayName: string | null }) {
   const { locale, t } = useLanguage()
@@ -33,13 +33,13 @@ export default function ReferralContent({ userId, displayName }: { userId: strin
     const copy = {
       en: [
         { title: 'Share your link', desc: 'Copy your unique referral link and send it to friends.' },
-        { title: 'Friend signs up', desc: 'They create a SkillLink account using your link.' },
+        { title: 'Friend signs up', desc: 'They create a Hire2Skill account using your link.' },
         { title: 'They complete a booking', desc: 'Your friend completes their first task or booking.' },
         { title: 'You both earn 100 NOK', desc: 'Credits appear in your account within 24 hours.' },
       ],
       no: [
         { title: 'Del lenken din', desc: 'Kopier din unike vervelenke og send den til venner.' },
-        { title: 'Vennen registrerer seg', desc: 'De oppretter en SkillLink-konto med lenken din.' },
+        { title: 'Vennen registrerer seg', desc: 'De oppretter en Hire2Skill-konto med lenken din.' },
         { title: 'Første booking fullføres', desc: 'Vennen fullfører sitt første oppdrag på plattformen.' },
         { title: 'Dere får 100 NOK hver', desc: 'Kreditt dukker opp på kontoen innen 24 timer.' },
       ],
@@ -157,7 +157,7 @@ export default function ReferralContent({ userId, displayName }: { userId: strin
         {/* Terms */}
         <div className="rounded-xl bg-gray-100 px-5 py-4 text-xs text-gray-500 leading-relaxed">
           <span className="font-semibold text-gray-700">Terms: </span>
-          Credits are awarded when your referred friend creates an account using your link and completes their first booking (minimum 300 NOK). Credits expire 12 months after issue. Not combinable with other promotional codes. SkillLink reserves the right to modify the referral programme.
+          Credits are awarded when your referred friend creates an account using your link and completes their first booking (minimum 300 NOK). Credits expire 12 months after issue. Not combinable with other promotional codes. Hire2Skill reserves the right to modify the referral programme.
         </div>
 
         <div className="text-center">

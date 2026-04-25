@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
       method: 'POST',
       headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        from: 'SkillLink Contact <no-reply@skilllink.no>',
+        from: 'Hire2Skill Contact <no-reply@hire2skill.com>',
         to: 'asmakhanasma@hotmail.co.uk',
         reply_to: sanitizeHtml(email),
         subject: `[Contact] ${sanitizeHtml(subject || 'General question')} - from ${sanitizeHtml(name)}`,

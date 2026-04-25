@@ -3,7 +3,7 @@ import ContactForm from './ContactForm'
 
 export const metadata: Metadata = {
   title: 'Contact Us',
-  description: 'Get in touch with the SkillLink team. We\'re here to help with any questions about bookings, accounts, or your experience on the platform.',
+  description: 'Get in touch with the Hire2Skill team. We\'re here to help with any questions about bookings, accounts, or your experience on the platform.',
 }
 
 const FAQ = [
@@ -43,7 +43,7 @@ export default function ContactPage() {
                 <span className="text-xl">📧</span>
                 <div>
                   <p className="text-sm font-semibold text-gray-700">Email</p>
-                  <p className="text-sm text-gray-500">support@skilllink.no</p>
+                  <p className="text-sm text-gray-500">support@hire2skill.com</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
@@ -57,7 +57,7 @@ export default function ContactPage() {
                 <span className="text-xl">📍</span>
                 <div>
                   <p className="text-sm font-semibold text-gray-700">Registered address</p>
-                  <p className="text-sm text-gray-500">SkillLink AS, Oslo, Norway</p>
+                  <p className="text-sm text-gray-500">Hire2Skill AS, Oslo, Norway</p>
                 </div>
               </div>
             </div>

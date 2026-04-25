@@ -21,29 +21,29 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://skilllink.no'),
+  metadataBase: new URL('https://hire2skill.com'),
   title: {
-    template: '%s | SkillLink',
-    default: 'SkillLink — Find Local Helpers in Norway',
+    template: '%s | Hire2Skill',
+    default: 'Hire2Skill — Find Local Helpers in Norway',
   },
-  description: 'SkillLink connects you with verified local helpers across Norway. Book cleaners, movers, tutors, handymen and more — fast and easy.',
-  keywords: ['local helpers Norway', 'hire cleaner Oslo', 'find handyman Bergen', 'tutoring Norway', 'SkillLink'],
+  description: 'Hire2Skill connects you with verified local helpers across Norway. Book cleaners, movers, tutors, handymen and more — fast and easy.',
+  keywords: ['local helpers Norway', 'hire cleaner Oslo', 'find handyman Bergen', 'tutoring Norway', 'Hire2Skill'],
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'SkillLink',
+    title: 'Hire2Skill',
   },
   formatDetection: { telephone: false },
   openGraph: {
-    siteName: 'SkillLink',
+    siteName: 'Hire2Skill',
     type: 'website',
     locale: 'nb_NO',
-    images: [{ url: '/og-default.png', width: 1200, height: 630, alt: 'SkillLink — Local helpers in Norway' }],
+    images: [{ url: '/og-default.png', width: 1200, height: 630, alt: 'Hire2Skill — Local helpers in Norway' }],
   },
   twitter: {
     card: 'summary_large_image',
-    site: '@skilllink_no',
+    site: '@hire2skill',
   },
   robots: { index: true, follow: true },
 }

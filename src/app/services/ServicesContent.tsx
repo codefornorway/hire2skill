@@ -4,6 +4,50 @@ import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { Search, X } from 'lucide-react'
 import { SERVICES } from '@/lib/services'
+import type { ElementType } from 'react'
+import {
+  AppWindow,
+  Baby,
+  Barbell,
+  Bell,
+  Broom,
+  Camera,
+  Car,
+  ChalkboardTeacher,
+  Confetti,
+  CookingPot,
+  Couch,
+  Dog,
+  Fan,
+  FlowerTulip,
+  HairDryer,
+  Hammer,
+  HandHeart,
+  House,
+  Ladder,
+  Lamp,
+  Lightning,
+  MusicNotes,
+  Needle,
+  PaintBrushBroad,
+  PaintRoller,
+  Package,
+  PawPrint,
+  PersonSimpleRun,
+  Pipe,
+  ShoppingBag,
+  Snowflake,
+  Sparkle,
+  SteeringWheel,
+  Toolbox,
+  Trash,
+  Truck,
+  TShirt,
+  Wall,
+  Wrench,
+  Yarn,
+} from '@phosphor-icons/react'
+import { categoryIconProps } from '@/lib/category-icon'
 
 const FILTERS: { label: string; categories: string[] }[] = [
   { label: 'All', categories: [] },
@@ -32,6 +76,67 @@ const FILTERS: { label: string; categories: string[] }[] = [
     categories: ['Events', 'Photography', 'Cooking', 'Baking', 'Makeup Artist', 'Hair Dresser', 'Shopping', 'Delivery', 'Car Wash', 'Knitting', 'Sewing'],
   },
 ]
+
+const SERVICE_ICON_BY_SLUG: Record<string, ElementType> = {
+  cleaning: Broom,
+  moving: Truck,
+  tutoring: ChalkboardTeacher,
+  handyman: Hammer,
+  'furniture-assembly': Couch,
+  gardening: FlowerTulip,
+  'it-tech': AppWindow,
+  events: Confetti,
+  'pet-care': PawPrint,
+  'dog-walking': Dog,
+  'snow-removal': Snowflake,
+  cooking: CookingPot,
+  photography: Camera,
+  'personal-training': PersonSimpleRun,
+  'window-cleaning': AppWindow,
+  painting: PaintRoller,
+  'elder-care': HandHeart,
+  'kids-care': Baby,
+  'music-lessons': MusicNotes,
+  shopping: ShoppingBag,
+  delivery: Package,
+  'makeup-artist': PaintBrushBroad,
+  'hair-dresser': HairDryer,
+  'car-wash': Car,
+  knitting: Yarn,
+  sewing: Needle,
+  'tv-mounting': AppWindow,
+  plumbing: Pipe,
+  'electrical-help': Lightning,
+  'drywall-repair': Wall,
+  'flooring-tiling': House,
+  'appliance-repair': Wrench,
+  'ceiling-fan': Fan,
+  'air-conditioning': Fan,
+  'shelf-installation': Ladder,
+  'blinds-installation': Lamp,
+  'baby-proofing': Baby,
+  'light-installation': Sparkle,
+  carpentry: Toolbox,
+  'cabinet-installation': Toolbox,
+  'fence-repair': Wrench,
+  'deck-restoration': House,
+  'home-theater': AppWindow,
+  'home-repairs': Wrench,
+  'closet-organization': TShirt,
+  'doorbell-installation': Bell,
+  'home-maintenance': Wrench,
+  'yard-work': FlowerTulip,
+  packing: Package,
+  'junk-removal': Trash,
+  'furniture-rearranging': Couch,
+  'heavy-lifting': Barbell,
+  'single-item-moving': Truck,
+  'spring-cleaning': Broom,
+  'picture-hanging': PaintBrushBroad,
+  'driving-lessons': SteeringWheel,
+  baking: CookingPot,
+  'wait-in-line': PersonSimpleRun,
+}
 
 export default function ServicesContent() {
   const [query, setQuery] = useState('')
@@ -110,10 +215,17 @@ export default function ServicesContent() {
             <Link key={s.slug} href={`/services/${s.slug}`}
               className="group bg-white rounded-2xl border border-gray-200 p-5 hover:border-blue-300 hover:shadow-lg
                          transition-all duration-200 flex flex-col items-start gap-3">
-              <div className="h-12 w-12 rounded-xl flex items-center justify-center text-2xl"
-                style={{ background: s.accentBg }}>
-                {s.emoji}
-              </div>
+              {(() => {
+                const Icon = SERVICE_ICON_BY_SLUG[s.slug]
+                return (
+                  <div className="h-12 w-12 rounded-xl flex items-center justify-center"
+                    style={{ background: s.accentBg }}>
+                    {Icon
+                      ? <Icon {...categoryIconProps(22, s.accentColor)} />
+                      : <span className="text-2xl">{s.emoji}</span>}
+                  </div>
+                )
+              })()}
               <div className="flex-1">
                 <p className="font-bold text-gray-900 text-sm group-hover:text-blue-600 transition-colors">{s.title}</p>
                 <p className="text-xs text-gray-400 mt-0.5 line-clamp-2">

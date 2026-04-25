@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { SERVICES } from '@/lib/services'
 
-const BASE = 'https://skilllink.no'
+const BASE = 'https://hire2skill.com'
 
 export default async function sitemap() {
   const supabase = await createClient()

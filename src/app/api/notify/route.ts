@@ -7,14 +7,16 @@ import { SERVER_ENV, getSupabaseServiceEnv } from '@/lib/env/server'
 import { logServerEvent } from '@/lib/telemetry'
 
 const RESEND_API_KEY = SERVER_ENV.RESEND_API_KEY
-const APP_URL = SERVER_ENV.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
-const FROM = 'SkillLink <no-reply@skilllink.no>'
+const APP_URL =
+  SERVER_ENV.NEXT_PUBLIC_APP_URL ??
+  (process.env.NODE_ENV === 'production' ? null : 'http://localhost:3000')
+const FROM = 'Hire2Skill <no-reply@hire2skill.com>'
 
 function configurePush() {
   const publicKey = SERVER_ENV.NEXT_PUBLIC_VAPID_PUBLIC_KEY
   const privateKey = SERVER_ENV.VAPID_PRIVATE_KEY
   if (!publicKey || !privateKey) return false
-  webpush.setVapidDetails('mailto:support@skilllink.no', publicKey, privateKey)
+  webpush.setVapidDetails('mailto:support@hire2skill.com', publicKey, privateKey)
   return true
 }
 
@@ -49,11 +51,11 @@ function layout(body: string) {
 <table width="560" cellpadding="0" cellspacing="0"
   style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
   <tr><td style="background:linear-gradient(135deg,#6366f1,#8b5cf6);padding:28px 36px;">
-    <span style="color:#fff;font-size:22px;font-weight:700;">SkillLink</span>
+    <span style="color:#fff;font-size:22px;font-weight:700;">Hire2Skill</span>
   </td></tr>
   <tr><td style="padding:32px 36px;color:#18181b;font-size:15px;line-height:1.6;">${body}</td></tr>
   <tr><td style="padding:20px 36px;background:#f4f4f5;color:#71717a;font-size:12px;">
-    © 2026 SkillLink. You received this because you have an account on SkillLink.
+    © 2026 Hire2Skill. You received this because you have an account on Hire2Skill.
   </td></tr>
 </table></td></tr></table></body></html>`
 }
@@ -89,6 +91,9 @@ export async function POST(req: NextRequest) {
 
     if (!RESEND_API_KEY) {
       return NextResponse.json({ error: 'Email service is not configured' }, { status: 503 })
+    }
+    if (!APP_URL) {
+      return NextResponse.json({ error: 'NEXT_PUBLIC_APP_URL is required in production' }, { status: 503 })
     }
     const { url, serviceRoleKey } = getSupabaseServiceEnv()
 
@@ -138,7 +143,7 @@ export async function POST(req: NextRequest) {
       await Promise.all([
         sendEmail(helperEmail, subject, layout(`
           <p style="margin:0 0 16px;">
-            <strong>${posterName}</strong> has sent you a booking request on SkillLink.
+            <strong>${posterName}</strong> has sent you a booking request on Hire2Skill.
           </p>
           <p>Log in to accept or decline.</p>
           ${btn('View Request', `${APP_URL}/dashboard`)}
@@ -176,7 +181,7 @@ export async function POST(req: NextRequest) {
       await Promise.all([
         sendEmail(posterEmail, subject, layout(`
           <p style="margin:0 0 16px;">
-            <strong>${helperName}</strong> accepted your booking request on SkillLink.
+            <strong>${helperName}</strong> accepted your booking request on Hire2Skill.
           </p>
           <p>You can now chat with ${helperName}.</p>
           ${btn('Open Chat', `${APP_URL}/chat/${booking.id}`)}

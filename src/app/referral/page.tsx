@@ -4,8 +4,8 @@ import ReferralContent from './ReferralContent'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Refer a friend — SkillLink',
-  description: 'Invite friends to SkillLink and earn 100 NOK credit for every friend who completes their first booking.',
+  title: 'Refer a friend — Hire2Skill',
+  description: 'Invite friends to Hire2Skill and earn 100 NOK credit for every friend who completes their first booking.',
 }
 
 export default async function ReferralPage() {

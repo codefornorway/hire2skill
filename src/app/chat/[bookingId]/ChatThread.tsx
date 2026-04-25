@@ -8,6 +8,7 @@ import type { ChatMessage } from './page'
 import { logClientEvent } from '@/lib/telemetry'
 import { useLanguage } from '@/context/LanguageContext'
 import { postNotify } from '@/lib/client-notify'
+import { formatDateByLocale, formatTimeByLocale } from '@/lib/i18n/date'
 
 function Avatar({ name, avatarUrl, size = 8 }: { name: string | null; avatarUrl: string | null; size?: number }) {
   const initials = (name ?? '?').split(' ').slice(0, 2).map(w => w[0]?.toUpperCase() ?? '').join('')
@@ -20,18 +21,18 @@ function Avatar({ name, avatarUrl, size = 8 }: { name: string | null; avatarUrl:
   return <div className={cls} style={{ background: bg }}>{initials}</div>
 }
 
-function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+function formatTime(iso: string, locale: 'no' | 'en' | 'da' | 'sv') {
+  return formatTimeByLocale(iso, locale, { hour: '2-digit', minute: '2-digit' })
 }
 
-function dateSeparatorLabel(iso: string) {
+function dateSeparatorLabel(iso: string, locale: 'no' | 'en' | 'da' | 'sv', labels: { today: string; yesterday: string }) {
   const d = new Date(iso)
   const today = new Date()
   const yesterday = new Date(today)
   yesterday.setDate(today.getDate() - 1)
-  if (d.toDateString() === today.toDateString()) return 'Today'
-  if (d.toDateString() === yesterday.toDateString()) return 'Yesterday'
-  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })
+  if (d.toDateString() === today.toDateString()) return labels.today
+  if (d.toDateString() === yesterday.toDateString()) return labels.yesterday
+  return formatDateByLocale(d, locale, { day: 'numeric', month: 'long' })
 }
 
 export default function ChatThread({
@@ -47,12 +48,13 @@ export default function ChatThread({
   otherAvatar: string | null
   initialMessages: ChatMessage[]
 }) {
-  const { t } = useLanguage()
+  const { t, locale } = useLanguage()
   const c = t.chatPage
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages)
   const [body, setBody] = useState('')
   const [sending, setSending] = useState(false)
   const [sendError, setSendError] = useState<string | null>(null)
+  const [notifyWarn, setNotifyWarn] = useState<string | null>(null)
   const [pendingRetry, setPendingRetry] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const supabase = useMemo(() => createClient(), [])
@@ -60,6 +62,12 @@ export default function ChatThread({
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  useEffect(() => {
+    if (!notifyWarn) return
+    const id = window.setTimeout(() => setNotifyWarn(null), 4500)
+    return () => window.clearTimeout(id)
+  }, [notifyWarn])
 
   // Real-time subscription for new messages in this conversation
   useEffect(() => {
@@ -105,7 +113,7 @@ export default function ChatThread({
 
     if (error || !data) {
       setMessages(prev => prev.filter(m => m.id !== optimisticId))
-      setSendError(error?.message ?? 'Could not send message. Check your connection and try again.')
+      setSendError(error?.message ?? (c.sendFailed ?? 'Could not send message. Check your connection and try again.'))
       logClientEvent('chat.send', 'warn', 'Message insert failed', { bookingId, error: error?.message ?? 'unknown' })
       setPendingRetry(text)
       setSending(false)
@@ -122,7 +130,7 @@ export default function ChatThread({
       preview: text,
     })
     if (!notify.ok) {
-      setSendError('Message delivered, but email/push notification may be delayed.')
+      setNotifyWarn(c.notifyDelayWarn ?? 'Message delivered, but email/push notification may be delayed.')
       logClientEvent('chat.notify', 'warn', 'Notify request failed', { bookingId, reason: notify.reason, status: notify.status })
     }
 
@@ -140,7 +148,10 @@ export default function ChatThread({
   // Group messages by date for separator rendering
   const grouped: { dateLabel: string; msgs: ChatMessage[] }[] = []
   for (const msg of messages) {
-    const label = dateSeparatorLabel(msg.created_at)
+    const label = dateSeparatorLabel(msg.created_at, locale, {
+      today: c.today ?? 'Today',
+      yesterday: c.yesterday ?? 'Yesterday',
+    })
     const last = grouped[grouped.length - 1]
     if (last?.dateLabel === label) {
       last.msgs.push(msg)
@@ -198,7 +209,7 @@ export default function ChatThread({
                       >
                         {msg.body}
                       </div>
-                      <span className="text-[11px] text-gray-400 px-1">{formatTime(msg.created_at)}</span>
+                      <span className="text-[11px] text-gray-400 px-1">{formatTime(msg.created_at, locale)}</span>
                     </div>
                   </div>
                 )
@@ -213,6 +224,11 @@ export default function ChatThread({
       {/* Input */}
       <form onSubmit={handleSend}
         className="flex flex-col gap-2 border-t border-gray-200 bg-white px-6 py-4 shrink-0">
+        {notifyWarn && (
+          <div className="rounded-xl border border-amber-100 bg-amber-50 px-3 py-2">
+            <p className="text-xs text-amber-900">{notifyWarn}</p>
+          </div>
+        )}
         {sendError && (
           <div className="flex items-start justify-between gap-3 rounded-xl border border-amber-100 bg-amber-50 px-3 py-2">
             <p className="text-xs text-amber-900">{sendError}</p>
@@ -222,7 +238,7 @@ export default function ChatThread({
                 onClick={() => { void sendMessage(pendingRetry) }}
                 disabled={sending}
                 className="shrink-0 text-xs font-bold text-amber-900 underline disabled:opacity-40">
-                Retry
+                {c.retry ?? 'Retry'}
               </button>
             )}
           </div>

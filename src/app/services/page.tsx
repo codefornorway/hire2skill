@@ -3,7 +3,7 @@ import ServicesContent from './ServicesContent'
 
 export const metadata: Metadata = {
   title: 'All Services',
-  description: 'Browse all services available on SkillLink — cleaning, moving, tutoring, handyman, pet care, and 50 more categories across Norway.',
+  description: 'Browse all services available on Hire2Skill — cleaning, moving, tutoring, handyman, pet care, and 50 more categories across Norway.',
 }
 
 export default function ServicesPage() {

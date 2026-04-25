@@ -6,7 +6,7 @@ import {
 
 export const metadata: Metadata = {
   title: 'Blog',
-  description: 'Tips, guides, and news from the SkillLink team. Get more from your helpers and grow your earnings as a tasker.',
+  description: 'Tips, guides, and news from the Hire2Skill team. Get more from your helpers and grow your earnings as a tasker.',
 }
 
 type Post = {
@@ -27,7 +27,7 @@ const POSTS: Post[] = [
     slug: '10-tips-to-get-more-bookings',
     category: 'For Helpers',
     categoryColor: '#2563EB',
-    title: '10 tips to get more bookings on SkillLink',
+    title: '10 tips to get more bookings on Hire2Skill',
     excerpt: "A complete profile, fast response times, and five-star first impressions — here's how top helpers fill their calendars.",
     date: 'April 18, 2026',
     readTime: '5 min read',
@@ -88,7 +88,7 @@ const POSTS: Post[] = [
     category: 'Safety',
     categoryColor: '#0284C7',
     title: 'Staying safe when using home service platforms',
-    excerpt: "What to check before letting someone into your home, and how SkillLink's verification protects you.",
+    excerpt: "What to check before letting someone into your home, and how Hire2Skill's verification protects you.",
     date: 'March 14, 2026',
     readTime: '4 min read',
     iconBg: '#F0F9FF',
@@ -106,7 +106,7 @@ export default function BlogPage() {
       {/* Hero */}
       <div className="bg-white border-b border-gray-100">
         <div className="mx-auto max-w-4xl px-6 py-14 text-center">
-          <h1 className="text-4xl font-extrabold text-gray-900 mb-3">SkillLink Blog</h1>
+          <h1 className="text-4xl font-extrabold text-gray-900 mb-3">Hire2Skill Blog</h1>
           <p className="text-gray-500 text-lg">Tips, guides, and news for helpers and task posters across Norway.</p>
         </div>
       </div>
@@ -167,7 +167,7 @@ export default function BlogPage() {
         </div>
 
         <p className="text-center text-sm text-gray-400 mt-12 py-8">
-          More articles coming soon. Check back regularly.
+          More articles are on the way. Check back regularly.
         </p>
       </div>
 

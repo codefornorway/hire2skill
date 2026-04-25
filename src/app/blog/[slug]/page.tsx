@@ -1,4 +1,3 @@
-import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import {
@@ -26,7 +25,7 @@ const POSTS: Post[] = [
     slug: '10-tips-to-get-more-bookings',
     category: 'For Helpers',
     categoryColor: '#2563EB',
-    title: '10 tips to get more bookings on SkillLink',
+    title: '10 tips to get more bookings on Hire2Skill',
     excerpt: "A complete profile, fast response times, and five-star first impressions — here's how top helpers fill their calendars.",
     date: 'April 18, 2026',
     readTime: '5 min read',
@@ -34,7 +33,7 @@ const POSTS: Post[] = [
     iconColor: '#2563EB',
     Icon: TrendingUp,
     sections: [
-      { body: 'Helpers who consistently earn on SkillLink share a handful of habits. These ten tips are drawn from the most-booked profiles on the platform.' },
+      { body: 'Helpers who consistently earn on Hire2Skill share a handful of habits. These ten tips are drawn from the most-booked profiles on the platform.' },
       { heading: '1. Fill out every section of your profile', body: 'Profiles with a bio, photo, category list, and hourly rate get 3× more views than incomplete ones. Posters make quick decisions — give them everything they need at a glance.' },
       { heading: '2. Use a real, clear profile photo', body: 'A friendly, well-lit photo of your face builds trust immediately. Avoid sunglasses, group photos, or logos. Think LinkedIn, not Instagram.' },
       { heading: '3. Respond within one hour', body: 'Speed is the single biggest predictor of booking. Enable push notifications and aim to reply within 60 minutes. Helpers who reply in under an hour close 4× more bookings than those who take a day.' },
@@ -86,7 +85,7 @@ const POSTS: Post[] = [
       { heading: 'Living room', body: '✓ Vacuum under and behind all furniture\n✓ Wipe skirting boards\n✓ Clean light switches and plug sockets\n✓ Dust ceiling corners and lampshades\n✓ Wash cushion covers and throws\n✓ Wipe down the TV screen and remote controls' },
       { heading: 'Bedrooms', body: '✓ Rotate and air the mattress\n✓ Wash pillows and duvet (check labels)\n✓ Vacuum under the bed\n✓ Clear out wardrobes and donate unused items\n✓ Wipe inside drawers\n✓ Clean windows and window sills' },
       { heading: 'Often forgotten spots', body: '✓ Top of the fridge\n✓ Inside the dishwasher (run a cleaning cycle)\n✓ Washing machine door seal\n✓ Behind the toilet\n✓ Inside wardrobe corners\n✓ Door frames and the tops of doors' },
-      { heading: 'Need a hand?', body: 'If spring cleaning feels overwhelming, a professional cleaner on SkillLink can do a full deep-clean in a few hours. Many customers book annually for exactly this reason.' },
+      { heading: 'Need a hand?', body: 'If spring cleaning feels overwhelming, a professional cleaner on Hire2Skill can do a full deep-clean in a few hours. Many customers book annually for exactly this reason.' },
     ],
   },
   {
@@ -102,7 +101,7 @@ const POSTS: Post[] = [
     Icon: Truck,
     sections: [
       { body: 'Moving home is consistently rated one of life\'s most stressful events. With the right preparation, it does not have to be. Here is a timeline that works.' },
-      { heading: '4 weeks before: book your movers', body: 'Good movers in Oslo and Bergen fill up fast, especially on weekends at the end of the month. Book at least four weeks ahead. Get quotes from two or three helpers on SkillLink and compare.' },
+      { heading: '4 weeks before: book your movers', body: 'Good movers in Oslo and Bergen fill up fast, especially on weekends at the end of the month. Book at least four weeks ahead. Get quotes from two or three helpers on Hire2Skill and compare.' },
       { heading: '3 weeks before: start decluttering', body: 'Moving is the perfect time to let go of things you no longer need. Sell, donate, or recycle before you pack — every item you move costs time and money.' },
       { heading: '2 weeks before: gather packing materials', body: 'You will need more boxes than you think. Collect free ones from supermarkets, or buy sturdy double-walled boxes for heavy items. Stock up on tape, bubble wrap, and markers.' },
       { heading: '1 week before: pack room by room', body: 'Start with rooms you use least — spare bedroom, storage areas. Label every box with its contents AND the room it belongs in at the new address. Pack essentials separately in a bag you keep with you.' },
@@ -129,7 +128,7 @@ const POSTS: Post[] = [
       { heading: 'Charge more for specialisations', body: 'If you have a certification, years of experience, or a speciality (eco cleaning products, baby-proofing, music exam preparation), you can charge a premium. Call it out explicitly in your bio.' },
       { heading: 'Factor in travel time for distant jobs', body: 'If a job takes 30 minutes to reach, build that into your effective rate or set a minimum booking duration. Many helpers set a 2-hour minimum to make shorter travel worthwhile.' },
       { heading: 'Raise rates gradually, not suddenly', body: 'If you have regulars, give them a heads-up before increasing your rate. A polite message explaining that you are adjusting your prices next month maintains trust and keeps the relationship.' },
-      { heading: 'Track your earnings over time', body: 'Keep a simple spreadsheet of hours worked and income. Knowing your effective hourly rate (after travel, supplies, and any SkillLink fees) helps you make smarter pricing decisions.' },
+      { heading: 'Track your earnings over time', body: 'Keep a simple spreadsheet of hours worked and income. Knowing your effective hourly rate (after travel, supplies, and any Hire2Skill fees) helps you make smarter pricing decisions.' },
     ],
   },
   {
@@ -137,20 +136,20 @@ const POSTS: Post[] = [
     category: 'Safety',
     categoryColor: '#0284C7',
     title: 'Staying safe when using home service platforms',
-    excerpt: "What to check before letting someone into your home, and how SkillLink's verification protects you.",
+    excerpt: "What to check before letting someone into your home, and how Hire2Skill's verification protects you.",
     date: 'March 14, 2026',
     readTime: '4 min read',
     iconBg: '#F0F9FF',
     iconColor: '#0284C7',
     Icon: ShieldCheck,
     sections: [
-      { body: "Inviting someone into your home requires trust. Here is how to make sure that trust is well-placed — and what SkillLink does to protect you before they even arrive." },
+      { body: "Inviting someone into your home requires trust. Here is how to make sure that trust is well-placed — and what Hire2Skill does to protect you before they even arrive." },
       { heading: "Check the 'Verified' badge", body: "Helpers with the green Verified badge have submitted ID documents that our team has reviewed. This is the first thing to look for when browsing profiles. Unverified helpers are newer to the platform and have not yet completed this step." },
       { heading: 'Read the reviews carefully', body: 'Look for patterns across multiple reviews, not just the star rating. Reviews that mention punctuality, communication, and quality of work are the most useful. A helper with 20 reviews averaging 4.8★ is a much safer choice than one with two reviews at 5★.' },
       { heading: 'Message before booking', body: 'A short conversation before booking tells you a lot. Is the helper responsive? Do they ask clarifying questions about the job? Good communicators make good workers.' },
-      { heading: 'Pay through the platform', body: 'Always pay through SkillLink. This protects both parties — your payment is only released once the job is marked complete, and our team can step in if there is a dispute.' },
+      { heading: 'Pay through the platform', body: 'Always pay through Hire2Skill. This protects both parties — your payment is only released once the job is marked complete, and our team can step in if there is a dispute.' },
       { heading: 'Trust your instincts', body: 'If a profile feels off or a helper asks to move the conversation off the platform, decline and report it. Our trust and safety team reviews all reports.' },
-      { heading: 'The SkillLink Happiness Guarantee', body: 'If a task does not meet the agreed standard, contact us within 72 hours. We will work to resolve the issue — including facilitating a re-do or a partial refund where appropriate.' },
+      { heading: 'The Hire2Skill Happiness Guarantee', body: 'If a task does not meet the agreed standard, contact us within 72 hours. We will work to resolve the issue — including facilitating a re-do or a partial refund where appropriate.' },
     ],
   },
 ]
@@ -159,7 +158,7 @@ export async function generateStaticParams() {
   return POSTS.map(p => ({ slug: p.slug }))
 }
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const post = POSTS.find(p => p.slug === slug)
   if (!post) return { title: 'Post not found' }

@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'Cookie Policy',
-  description: 'SkillLink Cookie Policy — what cookies we use, why, and how to control them.',
+  description: 'Hire2Skill Cookie Policy — what cookies we use, why, and how to control them.',
 }
 
 const LAST_UPDATED = '1 April 2026'
@@ -25,7 +25,7 @@ const COOKIES = [
   {
     name: '__skilllink_lang',
     type: 'Functional',
-    provider: 'SkillLink',
+    provider: 'Hire2Skill',
     purpose: 'Remembers your language preference (Norwegian / English).',
     duration: '1 year',
   },
@@ -60,7 +60,7 @@ export default function CookiesPage() {
 
           <section>
             <h2 className="text-lg font-bold text-gray-900 mb-3">How we use cookies</h2>
-            <p>SkillLink uses cookies in the following categories:</p>
+            <p>Hire2Skill uses cookies in the following categories:</p>
             <div className="mt-4 space-y-3">
               {[
                 { type: 'Essential', color: '#16A34A', bg: '#F0FDF4', desc: 'Required for the platform to work. Cannot be disabled.' },
@@ -114,14 +114,14 @@ export default function CookiesPage() {
               <li><strong>Edge:</strong> Settings → Cookies and site permissions</li>
             </ul>
             <p className="mt-4">
-              Note: disabling essential cookies will prevent you from logging in to SkillLink.
+              Note: disabling essential cookies will prevent you from logging in to Hire2Skill.
             </p>
           </section>
 
           <section>
             <h2 className="text-lg font-bold text-gray-900 mb-3">Third-party cookies</h2>
             <p>
-              We do not allow third-party advertising cookies on SkillLink. Our infrastructure providers (Supabase, Vercel)
+              We do not allow third-party advertising cookies on Hire2Skill. Our infrastructure providers (Supabase, Vercel)
               may set cookies as part of service delivery. These providers are GDPR-compliant and operate within the EEA.
             </p>
           </section>
@@ -138,7 +138,7 @@ export default function CookiesPage() {
           <section>
             <h2 className="text-lg font-bold text-gray-900 mb-3">Contact</h2>
             <p>
-              Questions about our use of cookies? Email <strong>privacy@skilllink.no</strong> or see our full{' '}
+              Questions about our use of cookies? Email <strong>privacy@hire2skill.com</strong> or see our full{' '}
               <a href="/privacy" className="text-blue-600 hover:underline">Privacy Policy</a>.
             </p>
           </section>

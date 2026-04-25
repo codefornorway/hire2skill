@@ -1,11 +1,30 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
   <defs>
-    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="bodyGrad" x1="0" y1="0" x2="80" y2="0" gradientUnits="userSpaceOnUse">
       <stop offset="0%" stop-color="#1E3A8A"/>
       <stop offset="100%" stop-color="#38BDF8"/>
     </linearGradient>
+    <linearGradient id="leftHead" x1="0" y1="0" x2="40" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1E3A8A"/>
+      <stop offset="100%" stop-color="#2563EB"/>
+    </linearGradient>
+    <linearGradient id="rightHead" x1="40" y1="0" x2="80" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#38BDF8"/>
+      <stop offset="100%" stop-color="#7DD3FC"/>
+    </linearGradient>
   </defs>
-  <rect width="192" height="192" rx="42" fill="url(#g)"/>
-  <text x="96" y="134" font-family="Arial Black,Arial,sans-serif" font-weight="900"
-        font-size="112" fill="white" text-anchor="middle" dominant-baseline="auto">S</text>
+  <rect width="192" height="192" rx="42" fill="#FFFFFF"/>
+  <g transform="translate(24 24) scale(1.8)">
+    <circle cx="24" cy="13" r="10" fill="url(#leftHead)"/>
+    <circle cx="57" cy="13" r="9" fill="url(#rightHead)"/>
+    <path
+      d="M10 45 C10 31 20 24 30 32 C34 35 37 38 40 40 C43 38 46 35 50 32 C60 24 70 31 70 45 C70 59 60 66 50 58 C46 55 43 52 40 50 C37 52 34 55 30 58 C20 66 10 59 10 45Z"
+      fill="url(#bodyGrad)"
+    />
+    <path
+      d="M10 45 C10 31 20 24 30 32 C34 35 37 38 40 40 C37 37 32 32 26 30 C17 28 10 35 10 45Z"
+      fill="#FFFFFF"
+      fill-opacity="0.12"
+    />
+  </g>
 </svg>

@@ -3,7 +3,7 @@ import Link from 'next/link'
 
 export const metadata: Metadata = {
   title: 'Personvern',
-  description: 'SkillLink personvern — kort norsk oversikt med lenke til full personvernerklæring.',
+  description: 'Hire2Skill personvern — kort norsk oversikt med lenke til full personvernerklæring.',
 }
 
 export default function PersonvernNoPage() {
@@ -13,7 +13,7 @@ export default function PersonvernNoPage() {
         <div>
           <h1 className="text-3xl font-extrabold text-gray-900 mb-2">Personvern</h1>
           <p className="text-sm text-gray-500">
-            SkillLink behandler personopplysninger i tråd med GDPR / personopplysningsloven.
+            Hire2Skill behandler personopplysninger i tråd med GDPR / personopplysningsloven.
           </p>
         </div>
 
@@ -44,7 +44,7 @@ export default function PersonvernNoPage() {
             <li>Rett til begrensning eller protest i visse tilfeller.</li>
           </ul>
 
-          <p>Kontakt: <strong>privacy@skilllink.no</strong></p>
+          <p>Kontakt: <strong>privacy@hire2skill.com</strong></p>
           <p>
             Full, juridisk detaljert personvernerklæring (engelsk) finner du her:{' '}
             <Link className="text-blue-600 font-semibold hover:underline" href="/privacy">Privacy Policy</Link>.

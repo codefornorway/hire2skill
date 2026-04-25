@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'Terms of Service',
-  description: 'SkillLink Terms of Service — the rules and conditions for using the SkillLink platform.',
+  description: 'Hire2Skill Terms of Service — the rules and conditions for using the Hire2Skill platform.',
 }
 
 const LAST_UPDATED = '1 April 2026'
@@ -22,8 +22,8 @@ export default function TermsPage() {
           <section>
             <h2 className="text-lg font-bold text-gray-900 mb-3">1. About these terms</h2>
             <p>
-              These Terms of Service (&quot;Terms&quot;) govern your use of the SkillLink platform operated by SkillLink AS,
-              a company registered in Norway. By creating an account or using SkillLink, you agree to these Terms.
+              These Terms of Service (&quot;Terms&quot;) govern your use of the Hire2Skill platform operated by Hire2Skill AS,
+              a company registered in Norway. By creating an account or using Hire2Skill, you agree to these Terms.
               If you do not agree, do not use the platform.
             </p>
             <p className="mt-3">
@@ -32,14 +32,14 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-bold text-gray-900 mb-3">2. The SkillLink platform</h2>
+            <h2 className="text-lg font-bold text-gray-900 mb-3">2. The Hire2Skill platform</h2>
             <p>
-              SkillLink is an online marketplace that connects individuals seeking help with tasks (&quot;Posters&quot;)
-              with individuals offering their skills and services (&quot;Helpers&quot;). SkillLink is a platform only —
+              Hire2Skill is an online marketplace that connects individuals seeking help with tasks (&quot;Posters&quot;)
+              with individuals offering their skills and services (&quot;Helpers&quot;). Hire2Skill is a platform only —
               we do not employ Helpers and are not a party to the service contract formed between a Poster and a Helper.
             </p>
             <p className="mt-3">
-              Helpers are independent contractors, not employees of SkillLink. SkillLink does not guarantee the quality,
+              Helpers are independent contractors, not employees of Hire2Skill. Hire2Skill does not guarantee the quality,
               safety, or legality of tasks posted or services offered.
             </p>
           </section>
@@ -60,8 +60,8 @@ export default function TermsPage() {
             <ul className="list-disc pl-5 space-y-2 text-sm">
               <li>Task posts must be accurate, lawful, and not misleading.</li>
               <li>You may not post tasks that are illegal, discriminatory, or that require a licensed professional where one is legally required (e.g. gas fitting, certain electrical work).</li>
-              <li>When a Helper accepts your booking, a contract is formed directly between you and the Helper. SkillLink is not a party to this contract.</li>
-              <li>Payments made through SkillLink are held in escrow and released to the Helper once the task is marked complete.</li>
+              <li>When a Helper accepts your booking, a contract is formed directly between you and the Helper. Hire2Skill is not a party to this contract.</li>
+              <li>Payments made through Hire2Skill are held in escrow and released to the Helper once the task is marked complete.</li>
               <li>Cancellations are subject to the cancellation policy displayed at the time of booking.</li>
             </ul>
           </section>
@@ -70,7 +70,7 @@ export default function TermsPage() {
             <h2 className="text-lg font-bold text-gray-900 mb-3">5. Helper responsibilities</h2>
             <ul className="list-disc pl-5 space-y-2 text-sm">
               <li>Helpers must ensure they have the necessary skills, qualifications, and (where required by law) licences to perform tasks they accept.</li>
-              <li>Helpers are responsible for declaring income earned through SkillLink to the Norwegian tax authority (Skatteetaten) in accordance with applicable law.</li>
+              <li>Helpers are responsible for declaring income earned through Hire2Skill to the Norwegian tax authority (Skatteetaten) in accordance with applicable law.</li>
               <li>Helpers must not misrepresent their skills, qualifications, or experience.</li>
               <li>Helpers must treat Posters with respect and perform tasks as agreed.</li>
             </ul>
@@ -78,11 +78,11 @@ export default function TermsPage() {
 
           <section>
             <h2 className="text-lg font-bold text-gray-900 mb-3">6. Prohibited conduct</h2>
-            <p>You may not use SkillLink to:</p>
+            <p>You may not use Hire2Skill to:</p>
             <ul className="list-disc pl-5 mt-3 space-y-2 text-sm">
               <li>Post false, fraudulent, or misleading content</li>
               <li>Harass, threaten, or intimidate any user</li>
-              <li>Circumvent the platform&apos;s payment system by arranging off-platform transactions with users you first met on SkillLink</li>
+              <li>Circumvent the platform&apos;s payment system by arranging off-platform transactions with users you first met on Hire2Skill</li>
               <li>Collect or store other users&apos; personal data without their consent</li>
               <li>Use automated tools to scrape, copy, or misuse platform content</li>
               <li>Violate any applicable Norwegian or EU law</li>
@@ -93,7 +93,7 @@ export default function TermsPage() {
             <h2 className="text-lg font-bold text-gray-900 mb-3">7. Reviews and ratings</h2>
             <p>
               Reviews may only be submitted by users who have completed a booking. Reviews must be honest and based on genuine experience.
-              SkillLink may remove reviews that violate these Terms or that appear to be fraudulent.
+              Hire2Skill may remove reviews that violate these Terms or that appear to be fraudulent.
               We do not modify the content of genuine reviews.
             </p>
           </section>
@@ -101,24 +101,24 @@ export default function TermsPage() {
           <section>
             <h2 className="text-lg font-bold text-gray-900 mb-3">8. Limitation of liability</h2>
             <p>
-              To the maximum extent permitted by Norwegian law, SkillLink&apos;s total liability for any claim arising
-              from use of the platform is limited to the fees paid by you to SkillLink in the 12 months preceding the claim.
-              SkillLink is not liable for any indirect, incidental, or consequential damages.
+              To the maximum extent permitted by Norwegian law, Hire2Skill&apos;s total liability for any claim arising
+              from use of the platform is limited to the fees paid by you to Hire2Skill in the 12 months preceding the claim.
+              Hire2Skill is not liable for any indirect, incidental, or consequential damages.
             </p>
             <p className="mt-3">
-              SkillLink does not guarantee that the platform will be available at all times or free from errors.
+              Hire2Skill does not guarantee that the platform will be available at all times or free from errors.
             </p>
           </section>
 
           <section>
             <h2 className="text-lg font-bold text-gray-900 mb-3">9. Intellectual property</h2>
             <p>
-              All content, trademarks, logos, and software on the SkillLink platform are the property of SkillLink AS
+              All content, trademarks, logos, and software on the Hire2Skill platform are the property of Hire2Skill AS
               or its licensors. You may not copy, reproduce, or distribute any part of the platform without our prior
               written consent.
             </p>
             <p className="mt-3">
-              By posting content (task descriptions, profile information, reviews) on SkillLink, you grant us a
+              By posting content (task descriptions, profile information, reviews) on Hire2Skill, you grant us a
               non-exclusive, royalty-free licence to display and use that content for operating and promoting the platform.
             </p>
           </section>
@@ -143,7 +143,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-lg font-bold text-gray-900 mb-3">12. Contact</h2>
             <p>
-              Questions about these Terms? Email us at <strong>legal@skilllink.no</strong> or use the{' '}
+              Questions about these Terms? Email us at <strong>legal@hire2skill.com</strong> or use the{' '}
               <a href="/contact" className="text-blue-600 hover:underline">Contact page</a>.
             </p>
           </section>
