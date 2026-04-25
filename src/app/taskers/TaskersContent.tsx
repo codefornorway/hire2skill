@@ -186,8 +186,7 @@ function MapView({
   )
 }
 
-const SORT_OPTIONS = ['recommended', 'price_asc', 'price_desc', 'most_reviews', 'top_rated'] as const
-type SortBy = (typeof SORT_OPTIONS)[number]
+type SortBy = 'recommended' | 'price_asc' | 'price_desc' | 'most_reviews' | 'top_rated'
 
 function Stars({ rating }: { rating: number }) {
   return (
@@ -522,7 +521,7 @@ export default function TaskersContent({
     }
 
     return list
-  }, [taskers, debouncedQuery, category, priceMin, priceMax, location, minRating, maxResponseHours, sortBy, wantNorwegian, wantEnglish, wantTools, wantInvoice])
+  }, [taskers, citySlug, debouncedQuery, category, priceMin, priceMax, location, minRating, maxResponseHours, sortBy, wantNorwegian, wantEnglish, wantTools, wantInvoice])
 
   function clearAll() {
     setQuery('')

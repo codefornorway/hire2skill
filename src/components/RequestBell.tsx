@@ -132,14 +132,15 @@ export default function RequestBell({ userId }: { userId: string }) {
     const supabase = createClient()
     let active = true
 
-    try {
-      const raw = typeof window !== 'undefined' ? window.localStorage.getItem(readStorageKey) : null
-      if (raw) setReadIds(new Set(JSON.parse(raw) as string[]))
-    } catch {
-      // ignore storage parse errors
-    }
-
-    void loadNotifications(supabase)
+    queueMicrotask(() => {
+      try {
+        const raw = typeof window !== 'undefined' ? window.localStorage.getItem(readStorageKey) : null
+        if (raw) setReadIds(new Set(JSON.parse(raw) as string[]))
+      } catch {
+        // ignore storage parse errors
+      }
+      void loadNotifications(supabase)
+    })
 
     const helperChannel = supabase
       .channel(`request-bell-helper-${userId}`)
