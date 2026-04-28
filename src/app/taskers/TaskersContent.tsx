@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import React, { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
@@ -11,6 +11,7 @@ import { categoryIconProps } from '@/lib/category-icon'
 import { helperCityKey } from '@/lib/helper-city-key'
 import { centroidLatLng, cityCenterLatLng, latLngForTasker } from '@/lib/geo/norway-city-centers'
 import { TaskersLeafletMap } from '@/components/maps/TaskersLeafletMap'
+import { UI_TOKENS } from '@/lib/ui/tokens'
 
 type Tasker = {
   id: string
@@ -37,6 +38,14 @@ function isElite(t: Tasker) {
 }
 
 const CATEGORIES = ['All', ...CATEGORY_LABELS]
+const CATEGORY_GROUPS: Record<string, string[]> = {
+  home: ['cleaning', 'windowcleaning', 'snowremoval', 'gardening', 'painting'],
+  handyman: ['handyman', 'furnitureassembly'],
+  moving: ['moving', 'delivery'],
+  tech: ['it'],
+  care: ['tutoring', 'drivinglessons', 'kidscare', 'eldercare', 'petcare', 'dogwalking', 'personaltraining', 'musiclessons'],
+  events: ['events', 'photography', 'cooking', 'baking', 'makeup', 'hairdresser', 'shopping', 'carwash', 'knitting', 'sewing'],
+}
 
 const AVATAR_COLORS = ['#2563EB', '#16A34A', '#7C3AED', '#D97706', '#E11D48', '#0284C7', '#EA580C', '#0F766E']
 
@@ -432,10 +441,12 @@ export default function TaskersContent({
   taskers,
   activeCategory,
   citySlug,
+  isSignedIn,
 }: {
   taskers: Tasker[]
   activeCategory: string | null
   citySlug: string | null
+  isSignedIn?: boolean
 }) {
   const { t } = useLanguage()
   const tt = t.taskers
@@ -502,6 +513,7 @@ export default function TaskersContent({
   const [query, setQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const [category, setCategory] = useState(activeCategory ?? 'All')
+  const groupParam = searchParams.get('group')?.toLowerCase() ?? null
 
   useEffect(() => {
     const id = setTimeout(() => setDebouncedQuery(query), 280)
@@ -538,12 +550,31 @@ export default function TaskersContent({
     if (category !== 'All') {
       const activeKey = toCategoryKey(category)
       list = list.filter(t => t.categories.some(c => toCategoryKey(c) === activeKey))
+    } else if (groupParam && CATEGORY_GROUPS[groupParam]) {
+      const groupKeys = CATEGORY_GROUPS[groupParam]
+      list = list.filter(t => t.categories.some(c => groupKeys.includes(toCategoryKey(c))))
     }
 
     list.sort((a, b) => (b.rating * 20 + b.tasks_done) - (a.rating * 20 + a.tasks_done))
 
     return list
-  }, [taskers, citySlug, debouncedQuery, category])
+  }, [taskers, citySlug, debouncedQuery, category, groupParam])
+
+  const activeFilterChips = useMemo(() => {
+    const chips: Array<{ key: 'query' | 'category'; label: string }> = []
+    if (debouncedQuery.trim()) chips.push({ key: 'query', label: `Search: ${debouncedQuery.trim()}` })
+    if (category !== 'All') chips.push({ key: 'category', label: `Category: ${category}` })
+    return chips
+  }, [debouncedQuery, category])
+
+  function removeChip(key: 'query' | 'category') {
+    if (key === 'query') {
+      setQuery('')
+      setDebouncedQuery('')
+      return
+    }
+    setCategory('All')
+  }
 
   function clearAll() {
     setQuery('')
@@ -587,7 +618,7 @@ export default function TaskersContent({
               onChange={e => setQuery(e.target.value)}
               placeholder={ui.searchPlaceholder}
               style={{ width: '100%', paddingLeft: '2.75rem', paddingRight: query ? '2.5rem' : '1rem' }}
-              className="block rounded-2xl border border-gray-200 bg-white py-3.5 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 shadow-sm transition"
+              className={`${UI_TOKENS.input} block shadow-sm transition`}
             />
             {query && (
               <button onClick={() => setQuery('')}
@@ -623,6 +654,20 @@ export default function TaskersContent({
             </button>
           ))}
         </div>
+
+        {activeFilterChips.length > 0 && (
+          <div className={`${UI_TOKENS.panel} mb-5 flex flex-wrap items-center gap-2 rounded-xl p-2.5`}>
+            {activeFilterChips.map((chip) => (
+              <button key={chip.key} type="button" onClick={() => removeChip(chip.key)} className={UI_TOKENS.chipButton}>
+                <span>{chip.label}</span>
+                <span>×</span>
+              </button>
+            ))}
+            <button onClick={clearAll} className={`ml-auto ${UI_TOKENS.clearAllLink}`}>
+              {ui.clearAllFilters}
+            </button>
+          </div>
+        )}
 
         {/* Results count + seasonal tag + view toggle */}
         <div className="flex items-center justify-between gap-2 mb-5">

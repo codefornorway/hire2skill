@@ -26,14 +26,14 @@ export default function NavbarClient({
   const isLoggedIn = Boolean(userId)
 
   return (
-    <nav className="bg-white border-b border-gray-200 px-3 py-3 sm:px-6 sm:py-4 sticky top-0 z-50 shadow-sm"
+    <nav className="sticky top-0 z-50 overflow-x-clip border-b border-gray-200 bg-white px-2 py-3 shadow-sm sm:px-6 sm:py-4"
       style={{ background: 'var(--sl-nav-bg)', borderColor: 'var(--sl-nav-border)' }}>
-      <div className="mx-auto flex max-w-6xl min-w-0 items-center justify-between gap-2 sm:gap-4">
+      <div className="mx-auto flex max-w-6xl min-w-0 items-center justify-between gap-1.5 sm:gap-4">
         <Link href="/" className="min-w-0 shrink hover:opacity-90 transition-opacity">
           <LogoHorizontal />
         </Link>
 
-        <div className="flex shrink-0 items-center gap-1.5 sm:gap-5">
+        <div className="flex shrink-0 items-center gap-1 sm:gap-5">
           <ExploreMenu />
 
           {isLoggedIn && userId ? (
@@ -48,7 +48,7 @@ export default function NavbarClient({
               <Link href="/profile" className="hidden sm:block text-sm font-medium text-gray-500 hover:text-blue-600 transition-colors">
                 {t.nav.profile}
               </Link>
-              <RequestBell userId={userId} />
+              <RequestBell userId={userId} messageUnreadCount={unreadCount} />
               <LogoutButton />
               <MobileNavSheet key={pathname} userEmail={userEmail} unreadCount={unreadCount} />
               <div className="hidden sm:flex h-9 w-9 items-center justify-center rounded-full text-white text-sm font-bold shadow-sm" style={{ background: 'linear-gradient(135deg,#1E3A8A,#38BDF8)' }}>
@@ -81,8 +81,12 @@ export default function NavbarClient({
             {t.nav.postJob}
           </Link>
 
-          <ThemeToggle />
-          <LanguageSwitcher />
+          <div className="hidden sm:block">
+            <ThemeToggle />
+          </div>
+          <div className="hidden sm:block">
+            <LanguageSwitcher />
+          </div>
         </div>
       </div>
     </nav>

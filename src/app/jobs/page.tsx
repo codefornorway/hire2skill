@@ -5,6 +5,9 @@ import { loadProposalCountsForPosts } from './proposal-counts'
 export const metadata = {
   title: 'Find Jobs',
   description: 'Browse open jobs posted by customers and send your proposal.',
+  alternates: {
+    canonical: '/jobs',
+  },
 }
 
 export default async function JobsPage() {

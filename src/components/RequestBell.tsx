@@ -6,12 +6,13 @@ import { useLanguage } from '@/context/LanguageContext'
 import { useNotificationFeed } from '@/hooks/useNotificationFeed'
 import NotificationFeedList from '@/components/NotificationFeedList'
 
-export default function RequestBell({ userId }: { userId: string }) {
+export default function RequestBell({ userId, messageUnreadCount = 0 }: { userId: string; messageUnreadCount?: number }) {
   const { t } = useLanguage()
   const p = t.notificationsPage
   const [open, setOpen] = useState(false)
   const panelRef = useRef<HTMLDivElement>(null)
   const { role, items, readIds, addReadIds, unreadCount } = useNotificationFeed(userId)
+  const totalUnread = unreadCount + messageUnreadCount
 
   useEffect(() => {
     function onDocMouseDown(e: MouseEvent) {
@@ -40,9 +41,9 @@ export default function RequestBell({ userId }: { userId: string }) {
         aria-label={t.nav.notifications}
       >
         <Bell size={16} />
-        {unreadCount > 0 && (
+        {totalUnread > 0 && (
           <span className="absolute -top-1.5 -right-1.5 rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] leading-none font-bold text-white min-w-[16px] text-center">
-            {unreadCount > 99 ? '99+' : unreadCount}
+            {totalUnread > 99 ? '99+' : totalUnread}
           </span>
         )}
       </button>

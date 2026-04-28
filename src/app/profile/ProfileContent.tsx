@@ -832,13 +832,24 @@ export default function ProfileContent({
   async function cancelPost(id: string) {
     setCancelBusy(id)
     const sb = createClient()
-    await sb.from('posts').update({ status: 'cancelled' }).eq('id', id)
-    await sb
+    const { error: postErr } = await sb.from('posts').update({ status: 'cancelled' }).eq('id', id)
+    if (postErr) {
+      setCancelBusy(null)
+      setConfirmCancel(null)
+      return
+    }
+    const { error: bookingErr } = await sb
       .from('bookings')
       .update({ status: 'cancelled' })
       .eq('post_id', id)
       .in('status', ['pending', 'accepted'])
-    setPosts(p => p.map(x => x.id === id ? { ...x, status: 'cancelled' } : x))
+    if (bookingErr) {
+      setCancelBusy(null)
+      setConfirmCancel(null)
+      return
+    }
+    // Remove cancelled task from this "Cancel a Task" list immediately.
+    setPosts(p => p.filter(x => x.id !== id))
     setPostBookingState((prev) => ({
       ...prev,
       [id]: {

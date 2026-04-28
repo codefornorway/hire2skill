@@ -5,6 +5,8 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useLanguage } from '@/context/LanguageContext'
+import ThemeToggle from '@/components/ThemeToggle'
+import LanguageSwitcher from '@/components/LanguageSwitcher'
 import { Bell, LayoutDashboard, LogOut, Menu, MessageCircle, UserRound, X } from 'lucide-react'
 
 type Props = {
@@ -127,7 +129,7 @@ export default function MobileNavSheet({ userEmail, unreadCount }: Props) {
               <Link
                 href="/post"
                 onClick={() => setOpen(false)}
-                className="mt-2 flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold text-white shadow-sm"
+                className="mt-2 flex w-full max-w-full min-w-0 items-center justify-center gap-2 overflow-hidden rounded-xl px-4 py-3 text-sm font-bold text-white shadow-sm"
                 style={{ background: 'linear-gradient(90deg,#F59E0B,#FBBF24)' }}
               >
                 {t.nav.postJob}
@@ -135,6 +137,10 @@ export default function MobileNavSheet({ userEmail, unreadCount }: Props) {
             </nav>
 
             <div className="border-t border-gray-200 p-3 safe-area-inset-bottom">
+              <div className="mb-3 flex items-center justify-center gap-3 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2">
+                <ThemeToggle />
+                <LanguageSwitcher />
+              </div>
               <button
                 type="button"
                 onClick={handleLogout}

@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { Search, X } from 'lucide-react'
+import { useSearchParams } from 'next/navigation'
 import { SERVICES } from '@/lib/services'
 import type { ElementType } from 'react'
 import {
@@ -48,6 +49,7 @@ import {
   Yarn,
 } from '@phosphor-icons/react'
 import { categoryIconProps } from '@/lib/category-icon'
+import { UI_TOKENS } from '@/lib/ui/tokens'
 
 const FILTERS: { label: string; categories: string[] }[] = [
   { label: 'All', categories: [] },
@@ -76,6 +78,18 @@ const FILTERS: { label: string; categories: string[] }[] = [
     categories: ['Events', 'Photography', 'Cooking', 'Baking', 'Makeup Artist', 'Hair Dresser', 'Shopping', 'Delivery', 'Car Wash', 'Knitting', 'Sewing'],
   },
 ]
+
+const GROUP_TO_FILTER_LABEL: Record<string, string> = {
+  home: 'Home & Cleaning',
+  outdoor: 'Home & Cleaning',
+  care: 'Kids & Pets',
+  learning: 'Kids & Pets',
+  creative: 'Events & More',
+  more: 'Events & More',
+  handyman: 'Handyman',
+  moving: 'Moving',
+  tech: 'Tech',
+}
 
 const SERVICE_ICON_BY_SLUG: Record<string, ElementType> = {
   cleaning: Broom,
@@ -139,8 +153,12 @@ const SERVICE_ICON_BY_SLUG: Record<string, ElementType> = {
 }
 
 export default function ServicesContent() {
-  const [query, setQuery] = useState('')
-  const [activeFilter, setActiveFilter] = useState('All')
+  const searchParams = useSearchParams()
+  const initialGroup = searchParams.get('group')?.toLowerCase() ?? ''
+  const initialQuery = searchParams.get('q') ?? ''
+  const initialFilter = GROUP_TO_FILTER_LABEL[initialGroup] ?? 'All'
+  const [query, setQuery] = useState(initialQuery)
+  const [activeFilter, setActiveFilter] = useState(initialFilter)
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -159,21 +177,39 @@ export default function ServicesContent() {
     })
   }, [query, activeFilter])
 
+  const activeFilterChips = useMemo(() => {
+    const chips: Array<{ key: 'query' | 'group'; label: string }> = []
+    if (query.trim()) chips.push({ key: 'query', label: `Search: ${query.trim()}` })
+    if (activeFilter !== 'All') chips.push({ key: 'group', label: `Group: ${activeFilter}` })
+    return chips
+  }, [query, activeFilter])
+
+  function removeFilterChip(key: 'query' | 'group') {
+    if (key === 'query') {
+      setQuery('')
+      return
+    }
+    setActiveFilter('All')
+  }
+
+  function clearAllFilters() {
+    setQuery('')
+    setActiveFilter('All')
+  }
+
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 py-4 sm:py-6">
 
       {/* Search + categories — highlighted panel */}
-      <div
-        className="mb-6 sm:mb-8 rounded-2xl border-2 border-blue-200/90 bg-gradient-to-b from-white via-white to-blue-50/50 p-3 sm:p-5 shadow-[0_8px_30px_-12px_rgba(30,58,138,0.25)] ring-1 ring-blue-100/80">
-        <div className="relative max-w-2xl mx-auto mb-3 sm:mb-4">
+      <div className={`mb-4 p-3 sm:p-4 ${UI_TOKENS.panel}`}>
+        <div className="relative max-w-2xl mx-auto mb-3">
           <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-500 pointer-events-none" strokeWidth={2.25} />
           <input
             type="text"
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder="Search services — cleaning, plumbing, tutoring…"
-            className="w-full rounded-xl border-2 border-blue-200/80 bg-white pl-12 pr-11 py-3 sm:py-3.5 text-base text-gray-900 shadow-inner shadow-blue-900/5
-                       placeholder:text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+            className={`w-full pl-12 pr-11 text-base text-gray-900 placeholder:text-gray-400 ${UI_TOKENS.input}`}
           />
           {query && (
             <button type="button" onClick={() => setQuery('')}
@@ -200,6 +236,20 @@ export default function ServicesContent() {
           ))}
         </div>
       </div>
+
+      {activeFilterChips.length > 0 && (
+        <div className={`${UI_TOKENS.panel} mb-5 flex flex-wrap items-center gap-2 rounded-xl p-2.5`}>
+          {activeFilterChips.map(chip => (
+            <button key={chip.key} type="button" onClick={() => removeFilterChip(chip.key)} className={UI_TOKENS.chipButton}>
+              <span>{chip.label}</span>
+              <span>×</span>
+            </button>
+          ))}
+          <button type="button" onClick={clearAllFilters} className={`ml-auto ${UI_TOKENS.clearAllLink}`}>
+            Clear all
+          </button>
+        </div>
+      )}
 
       {/* Result count */}
       {(query || activeFilter !== 'All') && (

@@ -1,8 +1,12 @@
+import { Suspense } from 'react'
 import ServicesContent from './ServicesContent'
 
 export const metadata = {
   title: 'All Services',
   description: 'Browse all services available on Hire2Skill — cleaning, moving, tutoring, handyman, pet care, and 50 more categories across Norway.',
+  alternates: {
+    canonical: '/services',
+  },
 }
 
 export default function ServicesPage() {
@@ -20,7 +24,9 @@ export default function ServicesPage() {
         </div>
       </div>
 
-      <ServicesContent />
+      <Suspense fallback={<div className="mx-auto max-w-6xl px-4 py-6 text-sm text-gray-500 sm:px-6">Loading services…</div>}>
+        <ServicesContent />
+      </Suspense>
     </div>
   )
 }

@@ -28,12 +28,12 @@ function AuthMark() {
 }
 
 function LoginPageContent() {
-  const { t } = useLanguage()
+  const { t, locale } = useLanguage()
   const L = t.login
   const searchParams = useSearchParams()
   const emailRef = useRef<HTMLInputElement>(null)
   const otpLen = getAuthOtpLength()
-  const [step, setStep] = useState<1 | 2 | 'pw'>(1)
+  const [step, setStep] = useState<1 | 2 | 'pw'>('pw')
   const [email, setEmail] = useState('')
   const [otp, setOtp] = useState('')
   const [error, setError] = useState('')
@@ -45,6 +45,14 @@ function LoginPageContent() {
   const nextPath = resolveNextPath(searchParams.get('next'))
   const signupHref = nextPath ? `/signup?next=${encodeURIComponent(nextPath)}` : '/signup'
   const passwordJustReset = searchParams.get('reset') === 'success'
+  const useCodeInsteadLabel =
+    locale === 'no'
+      ? 'Bruk e-postkode i stedet'
+      : locale === 'da'
+        ? 'Brug e-mailkode i stedet'
+        : locale === 'sv'
+          ? 'Använd e-postkod istället'
+          : 'Use email code instead'
 
   useEffect(() => {
     if (step !== 2) return
@@ -323,20 +331,28 @@ function LoginPageContent() {
           </div>
         ) : step === 'pw' ? (
           <form onSubmit={e => void handlePasswordLogin(e)} className="mt-3 sm:mt-4">
-            <p className="text-center text-xs font-medium text-gray-900 sm:text-sm">{L.signingInAs(email.trim())}</p>
-            <button
-              type="button"
-              onClick={() => {
-                setStep(1)
-                setPassword('')
-                setError('')
-                setNoAccount(false)
-              }}
-              className="mt-3 w-full text-center text-sm font-medium text-blue-600 underline decoration-blue-600/30 underline-offset-2 hover:text-blue-700"
-            >
-              {L.back}
-            </button>
             <div className="mt-5">
+              <div className="mb-1.5 flex items-center justify-between gap-2">
+                <label htmlFor="login-password-email" className="text-sm font-semibold text-gray-900">
+                  {L.email}
+                </label>
+              </div>
+              <input
+                id="login-password-email"
+                ref={emailRef}
+                type="email"
+                required
+                autoComplete="email"
+                value={email}
+                onChange={e => {
+                  setEmail(e.target.value)
+                  setNoAccount(false)
+                }}
+                placeholder={L.placeholder.email}
+                className="w-full rounded-xl border border-gray-200 bg-[#f0f7ff]/60 px-4 py-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100"
+              />
+            </div>
+            <div className="mt-4">
               <div className="mb-1.5 flex items-center justify-between gap-2">
                 <label htmlFor="login-password" className="text-sm font-semibold text-gray-900">
                   {L.password}
@@ -363,6 +379,19 @@ function LoginPageContent() {
               style={{ background: 'linear-gradient(90deg,#111827,#1f2937)' }}
             >
               {loading ? L.submitting : L.submit}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setStep(1)
+                setOtp('')
+                setPassword('')
+                setError('')
+                setNoAccount(false)
+              }}
+              className="mt-3 w-full text-center text-sm font-medium text-blue-600 underline decoration-blue-600/30 underline-offset-2 hover:text-blue-700"
+            >
+              {useCodeInsteadLabel}
             </button>
           </form>
         ) : (

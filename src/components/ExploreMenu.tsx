@@ -56,13 +56,13 @@ export default function ExploreMenu() {
         ref={btnRef}
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex max-w-[100%] items-center gap-1 rounded-lg px-2 py-1.5 text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors select-none sm:gap-1.5 sm:rounded-none sm:bg-transparent sm:px-0 sm:py-0 sm:hover:bg-transparent"
+        className="flex items-center gap-1 rounded-lg px-1.5 py-1.5 text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors select-none sm:gap-1.5 sm:rounded-none sm:bg-transparent sm:px-0 sm:py-0 sm:hover:bg-transparent"
         aria-expanded={open}
         aria-haspopup="menu"
-        aria-label={`${n.explore}: ${n.exploreServices}, ${n.exploreHelpers}, ${n.exploreJobs}`}
+        aria-label={`${n.explore}: ${n.postJob}, ${n.exploreHelpers}, ${n.exploreJobs}`}
       >
         <LayoutGrid className="h-4 w-4 shrink-0 text-blue-600 sm:hidden" strokeWidth={2} aria-hidden />
-        <span className="max-w-[5.5rem] truncate text-[11px] font-bold leading-tight text-gray-800 sm:hidden">
+        <span className="hidden max-w-[5.5rem] truncate text-[11px] font-bold leading-tight text-gray-800 sm:hidden">
           {n.explore}
         </span>
         <LayoutGrid className="hidden h-4 w-4 shrink-0 text-gray-500 sm:block" strokeWidth={2} aria-hidden />
@@ -85,8 +85,8 @@ export default function ExploreMenu() {
           }}
           role="menu"
         >
-          <Link href="/services" onClick={() => setOpen(false)} className="block whitespace-nowrap rounded-md px-2.5 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-blue-600 transition-colors sm:rounded-lg sm:px-3 sm:py-2.5">
-            {n.exploreServices}
+          <Link href="/post" onClick={() => setOpen(false)} className="block whitespace-nowrap rounded-md px-2.5 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-blue-600 transition-colors sm:rounded-lg sm:px-3 sm:py-2.5">
+            {n.postJob}
           </Link>
           <Link href="/taskers" onClick={() => setOpen(false)} className="block whitespace-nowrap rounded-md px-2.5 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-blue-600 transition-colors sm:rounded-lg sm:px-3 sm:py-2.5">
             {n.exploreHelpers}

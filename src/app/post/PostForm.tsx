@@ -513,6 +513,74 @@ type Helper = {
 }
 
 const AVATAR_COLORS = ['#2563EB', '#16A34A', '#7C3AED', '#D97706', '#E11D48', '#0284C7']
+const SERVICE_DESCRIPTIONS: Record<string, string> = {
+  Cleaning: 'Home, office, deep clean, move-in/out',
+  Moving: 'Packing, lifting, transport and setup',
+  Handyman: 'Small repairs, mounting, fixes',
+  Tutoring: 'School subjects, test prep, language',
+  Gardening: 'Lawn, trimming, seasonal yard work',
+  'Furniture Assembly': 'Flat-pack and complex assembly',
+  'Window Cleaning': 'Streak-free windows for homes and offices',
+  Photography: 'Events, portraits and professional shoots',
+  'Personal Training': 'Fitness coaching tailored to your goals',
+  'Pet Care': 'Walks, feeding and companionship for pets',
+  'Elder Care': 'Companion support and daily assistance',
+  'Kids Care': 'Babysitting and child supervision support',
+}
+const SERVICE_IMAGE_BY_KEY: Record<string, string> = {
+  Cleaning: '/home/cleaning-apartment-modern-1.png',
+  Moving: '/home/moving-furniture-apartment-1.png',
+  Handyman: '/home/handyman-real-life-1.png',
+  Tutoring: '/home/tutoring-home-1.png',
+  Gardening: '/home/gardening-real-life-1.png',
+  'Furniture Assembly': '/home/furniture-assembly-real-life-1.png',
+  'Window Cleaning': '/home/window-cleaning-real-life-1.png',
+  Photography: '/home/photography-real-life-1.png',
+  'Personal Training': '/home/personal-training-real-life-1.png',
+  Events: '/home/events-real-life-1.png',
+  'IT & Tech': '/home/it-tech-real-life-1.png',
+  'Pet Care': '/home/petcare-real-life-1.png',
+  Cooking: '/home/cooking-real-life-1.png',
+  Shopping: '/home/shopping-real-life-1.png',
+  Knitting: '/home/knitting-real-life-2.png',
+  Sewing: '/home/sewing-real-life-1.png',
+  'Kids Care': '/home/child-care-real-life-1.png',
+  'Elder Care': '/home/elder-care-real-life-1.png',
+}
+
+function getServicePreviewImage(category: string) {
+  if (SERVICE_IMAGE_BY_KEY[category]) return SERVICE_IMAGE_BY_KEY[category]
+  const key = toCategoryKey(category)
+  if (key.includes('window')) return '/home/window-cleaning-real-life-1.png'
+  if (key.includes('photo') || key.includes('camera') || key.includes('video')) return '/home/photography-real-life-1.png'
+  if (key.includes('personaltraining') || key.includes('fitness') || key.includes('trainer')) return '/home/personal-training-real-life-1.png'
+  if (key.includes('makeup') || key.includes('beauty') || key.includes('bridal')) return '/home/makeup-real-life-1.png'
+  if (key.includes('hair') || key.includes('dresser') || key.includes('salon') || key.includes('barber')) return '/home/hairdresser-real-life-1.png'
+  if (key.includes('carwash') || key.includes('detail') || key.includes('carclean')) return '/home/carwash-real-life-1.png'
+  if (key.includes('paint')) return '/home/painting-real-life-1.png'
+  if (key.includes('snow') || key.includes('deice') || key.includes('plow')) return '/home/snow-removal-real-life-1.png'
+  if (key.includes('dog') || key.includes('walk')) return '/home/dog-walking-real-life-1.png'
+  if (key.includes('pet')) return '/home/petcare-real-life-1.png'
+  if (key.includes('elder') || key.includes('senior')) return '/home/elder-care-real-life-1.png'
+  if (key.includes('kid') || key.includes('child') || key.includes('baby')) return '/home/child-care-real-life-1.png'
+  if (key.includes('music') || key.includes('guitar') || key.includes('piano')) return '/home/music-lessons-real-life-1.png'
+  if (key.includes('driv') || key.includes('license')) return '/home/driving-lessons-real-life-1.png'
+  if (key.includes('baking') || key.includes('cake') || key.includes('pastry')) return '/home/baking-real-life-1.png'
+  if (key.includes('sew') || key.includes('tailor') || key.includes('dress')) return '/home/sewing-real-life-1.png'
+  if (key.includes('knit') || key.includes('crochet') || key.includes('yarn')) return '/home/knitting-real-life-2.png'
+  if (key.includes('event') || key.includes('party') || key.includes('decor')) return '/home/events-real-life-1.png'
+  if (key.includes('it') || key.includes('tech') || key.includes('computer') || key.includes('wifi')) return '/home/it-tech-real-life-1.png'
+  if (key.includes('furniture') || key.includes('assembly') || key.includes('ikea')) return '/home/furniture-assembly-real-life-1.png'
+  if (key.includes('garden') || key.includes('yard') || key.includes('lawn')) return '/home/gardening-real-life-1.png'
+  if (key.includes('move') || key.includes('packing') || key.includes('lifting')) return '/home/moving-furniture-apartment-1.png'
+  if (key.includes('delivery') || key.includes('parcel')) return '/home/delivery-real-life-1.png'
+  if (key.includes('shop') || key.includes('grocery') || key.includes('errand')) return '/home/shopping-real-life-1.png'
+  if (key.includes('cook') || key.includes('meal') || key.includes('chef')) return '/home/cooking-real-life-1.png'
+  if (key.includes('tutor') || key.includes('lesson') || key.includes('study') || key.includes('school')) return '/home/tutoring-home-1.png'
+  if (key.includes('clean')) return '/home/cleaning-apartment-modern-1.png'
+  if (key.includes('handyman') || key.includes('repair') || key.includes('plumb') || key.includes('electric')) return '/home/handyman-real-life-1.png'
+  return '/home/cleaning-apartment-modern-2.png'
+}
 
 function isUuid(value: string) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
@@ -543,6 +611,7 @@ function getPostFormUi(locale: 'no' | 'en' | 'da' | 'sv') {
       preferredDate: 'Foretrukket dato',
       optional: '(valgfritt)',
       back: '← Tilbake',
+      changeCategory: 'Bytt kategori',
       browseHelpers: 'Bla gjennom hjelpere →',
       taskSummary: 'Oppdragssammendrag',
       budgetSummary: (value: string) => `${value} NOK budsjett`,
@@ -598,6 +667,7 @@ function getPostFormUi(locale: 'no' | 'en' | 'da' | 'sv') {
     preferredDate: 'Preferred date',
     optional: '(optional)',
     back: '← Back',
+    changeCategory: 'Change category',
     browseHelpers: 'Browse helpers →',
     taskSummary: 'Task summary',
     budgetSummary: (value: string) => `${value} NOK budget`,
@@ -699,7 +769,11 @@ export default function PostForm() {
   const [locSearching, setLocSearching] = useState(false)
   const [confirmDuplicateOpen, setConfirmDuplicateOpen] = useState(false)
   const [confirmDuplicateMessage, setConfirmDuplicateMessage] = useState('')
+  const [serviceQuery, setServiceQuery] = useState('')
+  const [selectedCategoryPreview, setSelectedCategoryPreview] = useState('')
+  const [taskImages, setTaskImages] = useState<Array<{ file: File; previewUrl: string }>>([])
   const locRef = useRef<HTMLDivElement>(null)
+  const mobilePreviewRef = useRef<HTMLDivElement>(null)
   const locAbortRef = useRef<AbortController | null>(null)
   const confirmResolverRef = useRef<((value: boolean) => void) | null>(null)
   const localizedScopingQuestions = useMemo(() => {
@@ -714,6 +788,28 @@ export default function PostForm() {
       ]),
     ) as Record<string, ScopingQ[]>
   }, [locale])
+  const filteredCategories = useMemo(() => {
+    const q = serviceQuery.trim().toLowerCase()
+    if (!q) return CATEGORIES
+    return CATEGORIES.filter((cat) => {
+      const description = SERVICE_DESCRIPTIONS[cat.key] ?? ''
+      return `${cat.key} ${description}`.toLowerCase().includes(q)
+    })
+  }, [serviceQuery])
+  const previewCategory =
+    CATEGORIES.find((c) => c.key === selectedCategoryPreview) ??
+    filteredCategories[0] ??
+    null
+  const MAX_TASK_IMAGES = 5
+
+  function handleSelectCategoryPreview(nextCategory: string) {
+    setSelectedCategoryPreview(nextCategory)
+    if (typeof window === 'undefined') return
+    if (!window.matchMedia('(max-width: 1023px)').matches) return
+    window.setTimeout(() => {
+      mobilePreviewRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 40)
+  }
 
   useEffect(() => {
     function onMouseDown(e: MouseEvent) {
@@ -864,6 +960,28 @@ export default function PostForm() {
     return e
   }
 
+  function handleTaskImagesSelected(files: FileList | null) {
+    if (!files) return
+    const incoming = Array.from(files).filter((f) => f.type.startsWith('image/'))
+    if (incoming.length === 0) return
+    setTaskImages((prev) => {
+      const remaining = Math.max(0, MAX_TASK_IMAGES - prev.length)
+      const next = incoming.slice(0, remaining).map((file) => ({
+        file,
+        previewUrl: URL.createObjectURL(file),
+      }))
+      return [...prev, ...next]
+    })
+  }
+
+  function removeTaskImage(index: number) {
+    setTaskImages((prev) => {
+      const item = prev[index]
+      if (item) URL.revokeObjectURL(item.previewUrl)
+      return prev.filter((_, i) => i !== index)
+    })
+  }
+
   async function handleConfirm() {
     setSubmitting(true)
     setSubmitError('')
@@ -871,7 +989,26 @@ export default function PostForm() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/login?next=/post'); return }
 
-    const fullDescription = [scopingSummary, description.trim()].filter(Boolean).join('\n\n')
+    let uploadedPhotoUrls: string[] = []
+    if (taskImages.length > 0) {
+      uploadedPhotoUrls = await Promise.all(
+        taskImages.map(async ({ file }, idx) => {
+          const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+          const safeExt = ext.replace(/[^a-z0-9]/g, '') || 'jpg'
+          const path = `${user.id}/post-requests/${Date.now()}-${idx}.${safeExt}`
+          const upload = await supabase.storage.from('task-photos').upload(path, file, { upsert: true })
+          if (upload.error) return null
+          const { data } = supabase.storage.from('task-photos').getPublicUrl(path)
+          return data.publicUrl
+        }),
+      ).then((urls) => urls.filter((u): u is string => Boolean(u)))
+    }
+
+    const fullDescription = [
+      scopingSummary,
+      description.trim(),
+      uploadedPhotoUrls.length > 0 ? `Task photos:\n${uploadedPhotoUrls.join('\n')}` : '',
+    ].filter(Boolean).join('\n\n')
 
     const { data: post, error: postError } = await supabase
       .from('posts')
@@ -955,11 +1092,121 @@ export default function PostForm() {
     return (
       <div>
         <ProgressBar step={1} labels={ui.steps} />
-        <div className="max-w-4xl mx-auto px-6 py-10">
-          <h1 className="text-2xl font-extrabold text-gray-900 mb-1 text-center">{ui.titleChoose}</h1>
-          <p className="text-sm text-gray-400 mb-8 text-center">{ui.subtitleChoose}</p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-            {CATEGORIES.map(cat => (
+        <div className="max-w-6xl mx-auto px-6 py-8">
+          <h1 className="text-2xl font-extrabold text-gray-900 mb-1">{ui.titleChoose}</h1>
+          <p className="text-sm text-gray-500 mb-6">{ui.subtitleChoose}</p>
+          <div className="relative mb-6">
+            <input
+              type="text"
+              value={serviceQuery}
+              onChange={(e) => setServiceQuery(e.target.value)}
+              placeholder="Search services..."
+              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+            />
+          </div>
+          {previewCategory && (
+            <div ref={mobilePreviewRef} className="mb-4 rounded-2xl border border-gray-200 bg-white p-4 lg:hidden">
+              <div className="mb-3 flex items-center gap-2">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: previewCategory.bg }}>
+                  <previewCategory.Icon {...categoryIconProps(18, previewCategory.color)} />
+                </span>
+                <h3 className="text-lg font-extrabold text-gray-900">{previewCategory.key}</h3>
+              </div>
+              <p className="text-sm text-gray-600">{SERVICE_DESCRIPTIONS[previewCategory.key] ?? 'General help'}</p>
+              <button
+                type="button"
+                onClick={() => {
+                  const locDefault = ui.locationFallbackCity
+                  setCategory(previewCategory.key)
+                  setScopingAnswers({})
+                  setTitle(`${previewCategory.key} help needed in ${locDefault}`)
+                  setDescription(`Please help with ${previewCategory.key.toLowerCase()} in ${locDefault}.`)
+                  setTitleTouched(false)
+                  setDescriptionTouched(false)
+                  setStep(2)
+                }}
+                className="mt-3 w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700"
+              >
+                Choose {previewCategory.key}
+              </button>
+            </div>
+          )}
+          <div className="grid gap-6 lg:grid-cols-[220px_1fr]">
+            <aside className="rounded-2xl border border-gray-200 bg-white p-4">
+              <button
+                type="button"
+                onClick={() => setServiceQuery('')}
+                className="mb-3 w-full rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-left text-sm font-bold text-blue-700 hover:bg-blue-100"
+              >
+                All categories ({CATEGORIES.length})
+              </button>
+              <p className="mb-3 text-xs font-bold uppercase tracking-wide text-gray-500">All categories</p>
+              <div className="max-h-[420px] space-y-2 overflow-y-auto pr-1">
+                {CATEGORIES.map((cat) => (
+                  <button
+                    key={cat.key}
+                    type="button"
+                    onClick={() => handleSelectCategoryPreview(cat.key)}
+                    className={`flex w-full items-center gap-2.5 rounded-lg border px-3 py-2 text-left text-sm font-semibold transition ${
+                      selectedCategoryPreview === cat.key
+                        ? 'border-blue-300 bg-blue-50 text-blue-700'
+                        : 'border-gray-200 text-gray-700 hover:border-blue-300 hover:text-blue-700'
+                    }`}
+                  >
+                    <span className="flex h-6 w-6 items-center justify-center rounded-md" style={{ background: cat.bg }}>
+                      <cat.Icon {...categoryIconProps(14, cat.color)} />
+                    </span>
+                    {cat.key}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-3 text-[11px] text-gray-400">
+                Showing {filteredCategories.length} of {CATEGORIES.length} categories
+              </p>
+            </aside>
+            <div className="space-y-4">
+            {previewCategory && (
+              <div className="hidden rounded-2xl border border-gray-200 bg-white p-4 lg:block">
+                <div className="grid gap-4 md:grid-cols-[220px_1fr]">
+                  <div className="relative h-36 overflow-hidden rounded-xl">
+                    <Image
+                      src={getServicePreviewImage(previewCategory.key)}
+                      alt={previewCategory.key}
+                      fill
+                      sizes="220px"
+                      className="object-cover"
+                    />
+                  </div>
+                  <div className="flex flex-col justify-center">
+                    <div className="mb-2 flex items-center gap-2">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: previewCategory.bg }}>
+                        <previewCategory.Icon {...categoryIconProps(18, previewCategory.color)} />
+                      </span>
+                      <h3 className="text-lg font-extrabold text-gray-900">{previewCategory.key}</h3>
+                    </div>
+                    <p className="text-sm text-gray-600">{SERVICE_DESCRIPTIONS[previewCategory.key] ?? 'General help'}</p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const locDefault = ui.locationFallbackCity
+                        setCategory(previewCategory.key)
+                        setScopingAnswers({})
+                        setTitle(`${previewCategory.key} help needed in ${locDefault}`)
+                        setDescription(`Please help with ${previewCategory.key.toLowerCase()} in ${locDefault}.`)
+                        setTitleTouched(false)
+                        setDescriptionTouched(false)
+                        setStep(2)
+                      }}
+                      className="mt-3 w-fit rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700"
+                    >
+                      Choose {previewCategory.key}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 xl:grid-cols-4 gap-3">
+            {filteredCategories.map(cat => (
               <button key={cat.key} type="button"
                 onClick={() => {
                   const locDefault = ui.locationFallbackCity
@@ -976,8 +1223,14 @@ export default function PostForm() {
                   <cat.Icon {...categoryIconProps(26, cat.color)} />
                 </div>
                 <span className="text-xs font-bold text-gray-800 group-hover:text-blue-600 transition-colors leading-tight">{cat.key}</span>
+                <span className="text-[11px] text-gray-400 leading-tight">{SERVICE_DESCRIPTIONS[cat.key] ?? 'General help'}</span>
               </button>
             ))}
+            </div>
+            </div>
+          </div>
+          <div className="mt-5 rounded-2xl border border-blue-100 bg-blue-50 p-4 text-sm text-blue-900">
+            Not sure? Choose the closest service now, you can refine details in the next step.
           </div>
         </div>
       </div>
@@ -997,10 +1250,17 @@ export default function PostForm() {
                 <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: cat.bg }}>
                   <cat.Icon {...categoryIconProps(20, cat.color)} />
                 </div>
-                <div>
+                <div className="flex-1">
                   <h1 className="text-xl font-extrabold text-gray-900">{category}</h1>
                   <p className="text-xs text-gray-400">{ui.taskIntro}</p>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setStep(1)}
+                  className="shrink-0 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-blue-600 hover:border-blue-300 hover:bg-blue-50"
+                >
+                  {ui.changeCategory}
+                </button>
               </div>
 
               {/* Scoping questions */}
@@ -1067,6 +1327,41 @@ export default function PostForm() {
                   placeholder={ui.taskDescriptionPlaceholder}
                   className={`w-full rounded-xl border px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-100 resize-none transition ${errors.description ? 'border-red-400' : 'border-gray-200 focus:border-blue-400'}`} />
                 {errors.description && <p className="mt-1 text-xs text-red-500">{errors.description}</p>}
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-sm font-semibold text-gray-700">
+                  Task photos <span className="text-gray-400 font-normal text-xs">(optional, up to 5)</span>
+                </label>
+                <label className="inline-flex cursor-pointer items-center rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:border-blue-300 hover:text-blue-700">
+                  Upload photos
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => {
+                      handleTaskImagesSelected(e.target.files)
+                      e.currentTarget.value = ''
+                    }}
+                  />
+                </label>
+                {taskImages.length > 0 && (
+                  <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-5">
+                    {taskImages.map((item, i) => (
+                      <div key={`${item.previewUrl}-${i}`} className="relative overflow-hidden rounded-lg border border-gray-200">
+                        <img src={item.previewUrl} alt={`Task photo ${i + 1}`} className="h-20 w-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => removeTaskImage(i)}
+                          className="absolute right-1 top-1 rounded-full bg-black/65 px-1.5 text-[10px] font-bold text-white"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Location */}
@@ -1162,6 +1457,7 @@ export default function PostForm() {
                   </div>
                 )}
                 {budget && <p className="text-xs font-bold text-green-600 mb-2">{ui.budgetSummary(budget)}</p>}
+                {taskImages.length > 0 && <p className="text-xs text-blue-600 mb-1 font-semibold">{taskImages.length} photo(s) attached</p>}
                 {preferredDate && <p className="text-xs text-gray-500">{formatDateByLocale(preferredDate, locale, { day: 'numeric', month: 'long', year: 'numeric' })}</p>}
                 {!title && !location && (
                   <p className="text-xs text-gray-400 italic">{ui.fillSummary}</p>
@@ -1187,10 +1483,22 @@ export default function PostForm() {
                 {loadingHelpers ? ui.loading : ui.helpersFound(filteredHelpers.length, location)}
               </p>
             </div>
-            <button type="button" onClick={() => { setSelectedHelper(null); setStep(4) }}
-              className="shrink-0 text-sm font-semibold text-blue-600 hover:underline whitespace-nowrap">
-              {ui.skipPublic}
-            </button>
+            <div className="flex shrink-0 items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedHelper(null)
+                  setStep(1)
+                }}
+                className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-blue-600 hover:border-blue-300 hover:bg-blue-50"
+              >
+                {ui.changeCategory}
+              </button>
+              <button type="button" onClick={() => { setSelectedHelper(null); setStep(4) }}
+                className="text-sm font-semibold text-blue-600 hover:underline whitespace-nowrap">
+                {ui.skipPublic}
+              </button>
+            </div>
           </div>
 
           {loadingHelpers ? (

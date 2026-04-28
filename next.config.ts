@@ -10,6 +10,23 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: ['172.28.16.1', '192.168.1.9'],
   poweredByHeader: false,
   compress: true,
+  async redirects() {
+    return [
+      { source: '/post-job', destination: '/post', permanent: true },
+      { source: '/post-a-job', destination: '/post', permanent: true },
+      { source: '/create-job', destination: '/post', permanent: true },
+      { source: '/new-job', destination: '/post', permanent: true },
+      { source: '/jobs/new', destination: '/post', permanent: true },
+      { source: '/create-task', destination: '/post', permanent: true },
+      { source: '/new-task', destination: '/post', permanent: true },
+      { source: '/find-jobs', destination: '/jobs', permanent: true },
+      { source: '/find-job', destination: '/jobs', permanent: true },
+      { source: '/find-work', destination: '/jobs', permanent: true },
+      { source: '/browse-jobs', destination: '/jobs', permanent: true },
+      { source: '/job-listings', destination: '/jobs', permanent: true },
+      { source: '/work', destination: '/jobs', permanent: true },
+    ]
+  },
   async headers() {
     return [
       {
