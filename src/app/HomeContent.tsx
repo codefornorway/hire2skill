@@ -113,7 +113,7 @@ export default function HomeContent({
   const router = useRouter()
   const h = t.home
   const [query, setQuery] = useState('')
-  const [heroLocation, setHeroLocation] = useState('Oslo')
+  const [heroLocation, setHeroLocation] = useState('All Norway')
 
   const jobsStrip = useMemo(() => {
     const source = jobs

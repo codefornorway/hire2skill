@@ -38,7 +38,10 @@ export default async function Home() {
     .limit(20)
 
   const jobs = (recentPosts ?? [])
-    .filter((p) => !['cancelled', 'completed', 'closed'].includes((p.status ?? '').toLowerCase()))
+    .filter((p) => {
+      const status = (p.status ?? '').toLowerCase()
+      return !status || status === 'open'
+    })
     .slice(0, 5)
     .map((p) => ({ ...p, urgent: false, postedAgo: formatPostedAgo(p.created_at) }))
 
