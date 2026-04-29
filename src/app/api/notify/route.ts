@@ -210,32 +210,58 @@ export async function POST(req: NextRequest) {
         .select('id, poster_id, helper_id')
         .eq('id', bookingIdForAccept)
         .single()
-      if (!booking || booking.helper_id !== user.id) {
+      if (!booking) return NextResponse.json({ ok: true })
+
+      const actorRole = user.id === booking.helper_id ? 'helper' : user.id === booking.poster_id ? 'poster' : null
+      if (!actorRole) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }
 
-      const [{ data: posterAuth }, { data: helper }] = await Promise.all([
-        supabase.auth.admin.getUserById(booking.poster_id),
-        supabase.from('profiles').select('display_name').eq('id', booking.helper_id).single(),
+      const actorId = user.id
+      const recipientId = actorRole === 'helper' ? booking.poster_id : booking.helper_id
+
+      const [{ data: recipientAuth }, { data: actorProfile }] = await Promise.all([
+        supabase.auth.admin.getUserById(recipientId),
+        supabase.from('profiles').select('display_name').eq('id', actorId).single(),
       ])
-      const posterEmail = posterAuth?.user?.email
-      const helperName = sanitizeHtml(helper?.display_name ?? 'Your helper')
-      const pushHelper = helper?.display_name?.trim() || 'Hjelperen'
-      const subject = `${helperName} accepted your request!`
-      const channels = await loadNotifyChannels(supabase, booking.poster_id)
+
+      const recipientEmail = recipientAuth?.user?.email
+      const actorName = sanitizeHtml(actorProfile?.display_name ?? (actorRole === 'helper' ? 'Your helper' : 'Your customer'))
+      const pushActor = actorProfile?.display_name?.trim() || (actorRole === 'helper' ? 'Hjelperen' : 'Kunden')
+
+      const subject =
+        actorRole === 'helper'
+          ? `${actorName} accepted your request!`
+          : `${actorName} accepted your proposal!`
+
+      const channels = await loadNotifyChannels(supabase, recipientId)
       const tasks: Promise<unknown>[] = []
-      if (posterEmail && APP_URL && channels.email) {
-        tasks.push(sendEmail(posterEmail, subject, layout(`
+      const recipientEmailSafe = recipientEmail ?? ''
+      const appUrlSafe = APP_URL ?? ''
+      // Transactional emails should always be delivered to the recipient's registered email.
+      // Profile toggles are respected for push notifications only.
+      const canSendEmail = Boolean(recipientEmailSafe && appUrlSafe)
+      if (!canSendEmail) {
+        logServerEvent('notify.route', 'warn', 'Email skipped (booking-accepted)', {
+          recipientId,
+          recipientEmailPresent: Boolean(recipientEmailSafe),
+          appUrlPresent: Boolean(appUrlSafe),
+          taskEmailEnabled: channels.email,
+          resendApiKeyPresent: Boolean(RESEND_API_KEY),
+        })
+      }
+      if (canSendEmail) {
+        tasks.push(sendEmail(recipientEmailSafe, subject, layout(`
           <p style="margin:0 0 16px;">
-            <strong>${helperName}</strong> accepted your booking request on Hire2Skill.
+            <strong>${actorName}</strong> ${actorRole === 'helper' ? 'accepted your booking request' : 'accepted your proposal'} on Hire2Skill.
           </p>
-          <p>You can now chat with ${helperName}.</p>
-          ${btn('Open Chat', `${APP_URL}/chat/${booking.id}`)}
+          <p>You can now chat with ${actorName}.</p>
+          ${btn('Open Chat', `${appUrlSafe}/chat/${booking.id}`)}
         `)))
       }
       if (configurePush() && channels.push) {
-        const p = pushBookingAccepted(pushHelper)
-        tasks.push(sendPush(booking.poster_id, supabase, {
+        const p = pushBookingAccepted(pushActor)
+        tasks.push(sendPush(recipientId, supabase, {
           title: p.title,
           body: p.body,
           url: pushLandingUrl(`/chat/${booking.id}`),
@@ -254,35 +280,65 @@ export async function POST(req: NextRequest) {
         .select('id, poster_id, helper_id')
         .eq('id', bookingIdForDecline)
         .single()
-      if (!booking || booking.helper_id !== user.id) {
+      if (!booking) return NextResponse.json({ ok: true })
+
+      const actorRole = user.id === booking.helper_id ? 'helper' : user.id === booking.poster_id ? 'poster' : null
+      if (!actorRole) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }
 
-      const [{ data: posterAuth }, { data: helper }] = await Promise.all([
-        supabase.auth.admin.getUserById(booking.poster_id),
-        supabase.from('profiles').select('display_name').eq('id', booking.helper_id).single(),
+      const actorId = user.id
+      const recipientId = actorRole === 'helper' ? booking.poster_id : booking.helper_id
+
+      const [{ data: recipientAuth }, { data: actorProfile }] = await Promise.all([
+        supabase.auth.admin.getUserById(recipientId),
+        supabase.from('profiles').select('display_name').eq('id', actorId).single(),
       ])
-      const posterEmail = posterAuth?.user?.email
-      const helperName = sanitizeHtml(helper?.display_name ?? 'Your helper')
-      const pushHelper = helper?.display_name?.trim() || 'Hjelperen'
-      const subject = `${helperName} declined your request`
-      const channels = await loadNotifyChannels(supabase, booking.poster_id)
+
+      const recipientEmail = recipientAuth?.user?.email
+      const actorName = sanitizeHtml(actorProfile?.display_name ?? (actorRole === 'helper' ? 'Your helper' : 'Your customer'))
+      const pushActor = actorProfile?.display_name?.trim() || (actorRole === 'helper' ? 'Hjelperen' : 'Kunden')
+
+      const subject = actorRole === 'helper' ? `${actorName} declined your request` : `${actorName} declined your proposal`
+      const channels = await loadNotifyChannels(supabase, recipientId)
       const tasks: Promise<unknown>[] = []
-      if (posterEmail && APP_URL && channels.email) {
-        tasks.push(sendEmail(posterEmail, subject, layout(`
+      const recipientEmailSafe = recipientEmail ?? ''
+      const appUrlSafe = APP_URL ?? ''
+      // Transactional emails should always be delivered to the recipient's registered email.
+      // Profile toggles are respected for push notifications only.
+      const canSendEmail = Boolean(recipientEmailSafe && appUrlSafe)
+      if (!canSendEmail) {
+        logServerEvent('notify.route', 'warn', 'Email skipped (booking-declined)', {
+          recipientId,
+          recipientEmailPresent: Boolean(recipientEmailSafe),
+          appUrlPresent: Boolean(appUrlSafe),
+          taskEmailEnabled: channels.email,
+          resendApiKeyPresent: Boolean(RESEND_API_KEY),
+        })
+      }
+      if (canSendEmail) {
+        tasks.push(sendEmail(recipientEmailSafe, subject, layout(`
           <p style="margin:0 0 16px;">
-            <strong>${helperName}</strong> declined your booking request on Hire2Skill.
+            <strong>${actorName}</strong> ${actorRole === 'helper' ? 'declined your booking request' : 'declined your proposal'} on Hire2Skill.
           </p>
-          <p>You can browse more helpers and send a new request anytime.</p>
-          ${btn('Find Helpers', `${APP_URL}/taskers`)}
+          <p>
+            ${actorRole === 'helper'
+              ? 'You can browse more helpers and send a new request anytime.'
+              : 'You can browse more jobs and send a new proposal anytime.'}
+          </p>
+          ${
+            actorRole === 'helper'
+              ? btn('Find Helpers', `${appUrlSafe}/taskers`)
+              : btn('Browse Jobs', `${appUrlSafe}/jobs`)
+          }
         `)))
       }
       if (configurePush() && channels.push) {
-        const p = pushBookingDeclined(pushHelper)
-        tasks.push(sendPush(booking.poster_id, supabase, {
+        const p = pushBookingDeclined(pushActor)
+        tasks.push(sendPush(recipientId, supabase, {
           title: p.title,
           body: p.body,
-          url: pushLandingUrl('/taskers'),
+          url: pushLandingUrl(`/chat/${booking.id}`),
         }))
       }
       await Promise.all(tasks)
@@ -310,13 +366,27 @@ export async function POST(req: NextRequest) {
       const subject = `New message from ${senderName}`
       const channels = await loadNotifyChannels(supabase, recipientId)
       const tasks: Promise<unknown>[] = []
-      if (recipientEmail && APP_URL && channels.email) {
-        tasks.push(sendEmail(recipientEmail, subject, layout(`
+      const recipientEmailSafe = recipientEmail ?? ''
+      const appUrlSafe = APP_URL ?? ''
+      // Transactional emails should always be delivered to the recipient's registered email.
+      // Profile toggles are respected for push notifications only.
+      const canSendEmail = Boolean(recipientEmailSafe && appUrlSafe)
+      if (!canSendEmail) {
+        logServerEvent('notify.route', 'warn', 'Email skipped (new-message)', {
+          recipientId,
+          recipientEmailPresent: Boolean(recipientEmailSafe),
+          appUrlPresent: Boolean(appUrlSafe),
+          taskEmailEnabled: channels.email,
+          resendApiKeyPresent: Boolean(RESEND_API_KEY),
+        })
+      }
+      if (canSendEmail) {
+        tasks.push(sendEmail(recipientEmailSafe, subject, layout(`
           <p style="margin:0 0 8px;">You have a new message from <strong>${senderName}</strong>.</p>
           ${safePreview ? `<blockquote style="margin:16px 0;padding:12px 16px;background:#f4f4f5;
             border-left:3px solid #8b5cf6;border-radius:0 6px 6px 0;color:#3f3f46;font-style:italic;">
             "${safePreview}${preview.length > 120 ? '…' : ''}"</blockquote>` : ''}
-          ${btn('Reply', `${APP_URL}/chat/${msgBookingId}`)}
+          ${btn('Reply', `${appUrlSafe}/chat/${msgBookingId}`)}
         `)))
       }
       if (configurePush() && channels.push) {

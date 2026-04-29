@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/client'
 import { CATEGORY_BY_KEY, toCategoryKey } from '@/lib/categories'
 import { useLanguage } from '@/context/LanguageContext'
 import { UI_TOKENS } from '@/lib/ui/tokens'
+import { postNotify } from '@/lib/client-notify'
 
 export type PublicJob = {
   id: string
@@ -732,7 +733,8 @@ export default function JobsContent({
     setError('')
     const supabase = createClient()
     const jobRef = `[JOB:${proposalJob.id}]`
-    const fullMessage = `${jobRef} ${message.trim()}`
+    const preview = message.trim()
+    const fullMessage = `${jobRef} ${preview}`
 
     let existingPending: { id: string }[] | null = null
     let duplicateCheckedByPostId = true
@@ -832,6 +834,15 @@ export default function JobsContent({
     } catch {
       // Optional bootstrap message; booking still exists.
     }
+
+    // Send email/push notification to the job poster for this proposal.
+    // We notify via `new-message` because we seed the initial chat content directly.
+    void postNotify({
+      type: 'new-message',
+      senderId: currentUserId,
+      bookingId: booking.id,
+      preview,
+    })
 
     setSending(false)
     setProposalJobId(null)
