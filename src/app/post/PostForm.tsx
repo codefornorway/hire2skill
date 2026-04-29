@@ -1091,6 +1091,14 @@ export default function PostForm() {
       }
     }
 
+    // Broadcast fresh public job listing to registered users.
+    void postNotify({
+      type: 'platform-new-job',
+      bookingData: {
+        post_id: post.id,
+      },
+    })
+
     router.push(`/dashboard?posted=1${requestSent ? '&requestSent=1' : ''}`)
   }
 

@@ -17,6 +17,7 @@ import {
   Paintbrush, Wand2, Snowflake, Dog, Sofa, AppWindow, Camera, Dumbbell,
   HeartHandshake, Music,
 } from 'lucide-react'
+import { postNotify } from '@/lib/client-notify'
 
 type Role = 'helper' | 'poster'
 
@@ -212,7 +213,13 @@ export default function OnboardingForm({ userId, userEmail }: { userId: string; 
       latitude,
       longitude,
     })
-    if (ok) setStep(3)
+    if (ok) {
+      void postNotify({
+        type: 'platform-new-worker',
+        bookingData: { worker_id: userId },
+      })
+      setStep(3)
+    }
   }
 
   return (
