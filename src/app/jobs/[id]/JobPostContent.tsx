@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { postNotify } from '@/lib/client-notify'
-import { ArrowLeft, MapPin, Tag, Clock, Users } from 'lucide-react'
+import { ArrowLeft, MapPin, Tag, Clock, Users, Share2 } from 'lucide-react'
 
 type JobPost = {
   id: string
@@ -46,6 +46,18 @@ export default function JobPostContent({
 
   const isOwner = currentUserId === post.posterId
   const isGuest = !currentUserId
+
+  async function handleShare() {
+    const url = window.location.href
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: post.title, text: `${post.category} job in ${post.location}`, url })
+      } catch { /* user cancelled */ }
+    } else {
+      await navigator.clipboard.writeText(url)
+      alert('Link copied to clipboard!')
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -90,7 +102,13 @@ export default function JobPostContent({
 
     if (isMissingPostIdColumnError(bookingError?.message)) {
       // Fallback: insert without post_id
-      const { post_id: _removed, ...payloadWithoutPostId } = insertPayload
+      const payloadWithoutPostId = {
+        poster_id: insertPayload.poster_id,
+        helper_id: insertPayload.helper_id,
+        status: insertPayload.status,
+        budget: insertPayload.budget,
+        message: insertPayload.message,
+      }
       const fallback = await supabase
         .from('bookings')
         .insert(payloadWithoutPostId)
@@ -136,13 +154,20 @@ export default function JobPostContent({
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
-      <Link
-        href="/jobs"
-        className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-blue-600 transition-colors"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Back to jobs
-      </Link>
+      <div className="mb-6 flex items-center justify-between">
+        <Link href="/jobs" className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-blue-600 transition-colors">
+          <ArrowLeft className="h-4 w-4" />
+          Back to jobs
+        </Link>
+        <button
+          type="button"
+          onClick={handleShare}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+        >
+          <Share2 className="h-4 w-4" />
+          Share
+        </button>
+      </div>
 
       <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
         {/* Header */}

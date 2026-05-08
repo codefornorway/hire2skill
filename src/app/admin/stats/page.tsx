@@ -6,6 +6,12 @@ import AdminStatsContent from './AdminStatsContent'
 
 export const dynamic = 'force-dynamic'
 
+function countSince(users: { created_at: string }[] | null, days: number): number {
+  const cutoff = new Date()
+  cutoff.setDate(cutoff.getDate() - days)
+  return (users ?? []).filter(u => new Date(u.created_at) > cutoff).length
+}
+
 export type PlatformStats = {
   totalHelpers: number
   totalPosters: number
@@ -56,11 +62,8 @@ export default async function AdminStatsPage() {
     admin.from('profiles').select('created_at').order('created_at', { ascending: false }).limit(500),
   ])
 
-  const now = Date.now()
-  const day7 = now - 7 * 24 * 60 * 60 * 1000
-  const day30 = now - 30 * 24 * 60 * 60 * 1000
-  const newUsersLast7Days = (recentUsers ?? []).filter(u => new Date(u.created_at).getTime() > day7).length
-  const newUsersLast30Days = (recentUsers ?? []).filter(u => new Date(u.created_at).getTime() > day30).length
+  const newUsersLast7Days = countSince(recentUsers, 7)
+  const newUsersLast30Days = countSince(recentUsers, 30)
 
   const bookingsByStatus: Record<string, number> = {}
   for (const row of bookingStatuses ?? []) {
